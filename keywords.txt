@@ -1,0 +1,33 @@
+#######################################
+# Syntax Coloring Map
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+ACAN2517FD KEYWORD1
+ACAN2517FDSettings	KEYWORD1
+CANMessage	KEYWORD1
+CANFDMessage	KEYWORD1
+MCP2517Filters	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+available	KEYWORD2
+receive	KEYWORD2
+dispatchReceivedMessage	KEYWORD2
+tryToSend	KEYWORD2
+isr	KEYWORD2
+appendPassAllFilter	KEYWORD2
+appendFormatFilter	KEYWORD2
+appendFrameFilter	KEYWORD2
+appendFilter	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
