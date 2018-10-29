@@ -10,7 +10,7 @@ ACAN2517FD KEYWORD1
 ACAN2517FDSettings	KEYWORD1
 CANMessage	KEYWORD1
 CANFDMessage	KEYWORD1
-MCP2517Filters	KEYWORD1
+ACAN2517FDFilters	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
