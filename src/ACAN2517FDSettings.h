@@ -107,6 +107,14 @@ class ACAN2517FDSettings {
   public: bool mTXCANIsOpenDrain = false ; // false --> Push/Pull Output, true --> Open Drain Output
 
 //······················································································································
+//    ISO CRC Enable
+//······················································································································
+
+// false --> Do NOT include Stuff Bit Count in CRC Field and use CRC Initialization Vector with all zeros
+// true --> Include Stuff Bit Count in CRC Field and use Non-Zero CRC Initialization Vector according to ISO 11898-1:2015
+  public: bool mISOCRCEnabled = true ;
+
+//······················································································································
 //    CLKO pin function (default value is MCP2517FD power on setting)
 //······················································································································
 

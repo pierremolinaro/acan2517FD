@@ -288,7 +288,13 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     if (inSettings.mTXCANIsOpenDrain) {
       d |= 1 << 4 ; // TXCANOD
     }
-    writeByteRegister (IOCON_REGISTER + 3, d); // DS20005688B, page 18
+    writeByteRegister (IOCON_REGISTER + 3, d); // DS20005688B, page 24
+  //----------------------------------- Configure ISO CRC Enable bit
+    d = 1 << 6 ; // PXEDIS <-- 1
+    if (inSettings.mISOCRCEnabled) {
+      d |= 1 << 5 ; //  Enable ISO CRC in CAN FD Frames bit
+    }
+    writeByteRegister (IOCON_REGISTER, d); // DS20005688B, page 24
   //----------------------------------- Configure C1DTC (DS20005688B, page 29)
 //     data = 1 << 25 ; // Enable Edge Filtering during Bus Integration state bit
 //     data |= 1 << 17 ; // Auto TDC
