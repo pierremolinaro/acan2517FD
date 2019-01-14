@@ -122,9 +122,15 @@ class ACAN2517FDFilters {
       mFilterStatus = kStandardIdentifierTooLarge ;
       mFilterErrorIndex = mFilterCount ;
     }
-  //--- Enter filter
+  //--- Re order bits if extended filter
     const uint32_t mask = (1 << 30) | ((inFormat == kExtended) ? 0x1FFFFFFF : 0x7FF) ;
-    const uint32_t acceptance = inIdentifier | ((inFormat == kExtended) ? (1 << 30) : 0) ;
+    uint32_t acceptance ;
+    if (inFormat == kExtended) {
+      acceptance = ((inIdentifier >> 18) & 0x7FF) | ((inIdentifier & 0x3FFFF) << 11) | (1 << 30) ;
+    }else{
+      acceptance = inIdentifier ;
+    }
+  //--- Enter filter
     Filter * f = new Filter (mask, acceptance, inCallBackRoutine) ;
     if (mFirstFilter == NULL) {
       mFirstFilter = f ;
@@ -166,9 +172,20 @@ class ACAN2517FDFilters {
       mFilterStatus = kStandardMaskTooLarge ;
       mFilterErrorIndex = mFilterCount ;
     }
+  //--- Re order bits if extended filter
+    uint32_t mask = 1 << 30 ;
+    if (inFormat == kExtended) {
+      mask |= ((inMask >> 18) & 0x7FF) | ((inMask & 0x3FFFF) << 11) ;
+    }else{
+      mask |= inMask ;
+    }
+    uint32_t acceptance ;
+    if (inFormat == kExtended) {
+      acceptance = ((inAcceptance >> 18) & 0x7FF) | ((inAcceptance & 0x3FFFF) << 11) | (1 << 30) ;
+    }else{
+      acceptance = inAcceptance ;
+    }
   //--- Enter filter
-    const uint32_t mask = (1 << 30) | inMask ;
-    const uint32_t acceptance = ((inFormat == kExtended) ? (1 << 30) : 0) | inAcceptance ;
     Filter * f = new Filter (mask, acceptance, inCallBackRoutine) ;
     if (mFirstFilter == NULL) {
       mFirstFilter = f ;
