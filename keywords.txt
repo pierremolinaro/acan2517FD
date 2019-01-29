@@ -6,7 +6,7 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-ACAN2517FD KEYWORD1
+ACAN2517FD	KEYWORD1
 ACAN2517FDSettings	KEYWORD1
 CANMessage	KEYWORD1
 CANFDMessage	KEYWORD1

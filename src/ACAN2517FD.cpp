@@ -8,6 +8,46 @@
 #include <ACAN2517FD.h>
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// Note about ESP32
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+// It appears that Arduino ESP32 interrupts are managed in a completely different way from "usual" Arduino:
+//   - SPI.usingInterrupt is not implemented;
+//   - noInterrupts() and interrupts() are NOPs;
+//   - interrupt service routines should be fast, otherwise you get an "Guru Meditation Error: Core 1 panic'ed
+//     (Interrupt wdt timeout on CPU1)".
+
+// So we handle the ESP32 interrupt in the following way:
+//   - interrupt service routine performs a xSemaphoreGive on mISRSemaphore of can driver
+//   - this activates the myESP32Task task that performs "isr_core" that is done by interrupt service routine
+//     in "usual" Arduino;
+//   - as this task runs in parallel with setup / loop routines, SPI access is protected by a mutual access exclusion
+//     semaphore named gMutualExclusion.
+
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+#ifdef ARDUINO_ARCH_ESP32
+  static SemaphoreHandle_t gMutualExclusion = xSemaphoreCreateCounting (1, 1) ;
+#endif
+
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+#ifdef ARDUINO_ARCH_ESP32
+  static void myESP32Task (void * pData) {
+    ACAN2517FD * canDriver = (ACAN2517FD *) pData ;
+    while (1) {
+      xSemaphoreTake (canDriver->mISRSemaphore, portMAX_DELAY) ;
+      bool loop = true ;
+      while (loop) {
+        xSemaphoreTake (gMutualExclusion, portMAX_DELAY) ;
+          loop = canDriver->isr_core () ;
+        xSemaphoreGive (gMutualExclusion) ;
+	    }
+    }
+  }
+#endif
+
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 // ACAN2517FD register addresses
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
@@ -108,7 +148,11 @@ mTransmitFIFOPayload (0),
 mTXQBufferPayload (0),
 mReceiveFIFOPayload (0),
 mDriverReceiveBuffer (),
-mDriverTransmitBuffer () {
+mDriverTransmitBuffer ()
+#ifdef ARDUINO_ARCH_ESP32
+  , mISRSemaphore (xSemaphoreCreateCounting (10, 0))
+#endif
+{
 }
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
@@ -185,6 +229,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   }
 //----------------------------------- CS pin
   if (errorCode == 0) {
+    pinMode (mINT, INPUT_PULLUP) ;
     pinMode (mCS, OUTPUT) ;
     deassertCS () ;
   //----------------------------------- Set SPI clock to 1 MHz
@@ -270,9 +315,6 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   }
 //----------------------------------- Install interrupt, configure external interrupt
   if (errorCode == 0) {
-    pinMode (mINT, INPUT_PULLUP) ;
-    attachInterrupt (itPin, inInterruptServiceRoutine, LOW) ;
-    mSPI.usingInterrupt (itPin) ;
   //----------------------------------- Configure transmit and receive buffers
     mDriverTransmitBuffer.initWithSize (inSettings.mDriverTransmitFIFOSize) ;
     mDriverReceiveBuffer.initWithSize (inSettings.mDriverReceiveFIFOSize) ;
@@ -402,6 +444,13 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
         wait = false ;
       }
     }
+    #ifdef ARDUINO_ARCH_ESP32
+      xTaskCreate (myESP32Task, "ACAN2517Handler", 1024, this, 256, NULL) ;
+      attachInterrupt (itPin, inInterruptServiceRoutine, FALLING) ;
+    #else
+      attachInterrupt (itPin, inInterruptServiceRoutine, LOW) ;
+      mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
+    #endif
   }
 //---
   return errorCode ;
@@ -431,6 +480,8 @@ bool ACAN2517FD::tryToSend (const CANFDMessage & inMessage) {
   if (ok) {
     #if (defined (__MK64FX512__) || defined (__MK66FX1M0__))
       noInterrupts () ;
+    #elif defined (ARDUINO_ARCH_ESP32)
+      xSemaphoreTake (gMutualExclusion, portMAX_DELAY) ;
     #endif
       mSPI.beginTransaction (mSPISettings) ;
         if (inMessage.idx == 0) {
@@ -447,6 +498,8 @@ bool ACAN2517FD::tryToSend (const CANFDMessage & inMessage) {
       mSPI.endTransaction () ;
     #if (defined (__MK64FX512__) || defined (__MK66FX1M0__))
       interrupts () ;
+    #elif defined (ARDUINO_ARCH_ESP32)
+      xSemaphoreGive (gMutualExclusion) ;
     #endif
   }
   return ok ;
@@ -569,21 +622,37 @@ bool ACAN2517FD::sendViaTXQ (const CANFDMessage & inMessage) {
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
 bool ACAN2517FD::available (void) {
-  noInterrupts () ;
+  #ifdef ARDUINO_ARCH_ESP32
+    xSemaphoreTake (gMutualExclusion, portMAX_DELAY) ;
+  #else
+    noInterrupts () ;
+  #endif
     const bool hasReceivedMessage = mDriverReceiveBuffer.count () > 0 ;
-  interrupts () ;
+  #ifdef ARDUINO_ARCH_ESP32
+    xSemaphoreGive (gMutualExclusion) ;
+  #else
+    interrupts () ;
+  #endif
   return hasReceivedMessage ;
 }
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
 bool ACAN2517FD::receive (CANFDMessage & outMessage) {
-  noInterrupts () ;
+  #ifdef ARDUINO_ARCH_ESP32
+    xSemaphoreTake (gMutualExclusion, portMAX_DELAY) ;
+  #else
+    noInterrupts () ;
+  #endif
     const bool hasReceivedMessage = mDriverReceiveBuffer.remove (outMessage) ;
     if (hasReceivedMessage) { // Receive FIFO is not full, enable "FIFO  not empty" interrupt
       writeByteRegisterSPI (C1FIFOCON_REGISTER (receiveFIFOIndex), 1) ;
     }
-  interrupts () ;
+  #ifdef ARDUINO_ARCH_ESP32
+    xSemaphoreGive (gMutualExclusion) ;
+  #else
+    interrupts () ;
+  #endif
 //---
   return hasReceivedMessage ;
 }
@@ -607,17 +676,41 @@ bool ACAN2517FD::dispatchReceivedMessage (const tFilterMatchCallBack inFilterMat
 }
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
-//   INTERRUPT SERVICE ROUTINE
+//   INTERRUPT SERVICE ROUTINE (ESP32)
+// https://stackoverflow.com/questions/51750377/how-to-disable-interrupt-watchdog-in-esp32-or-increase-isr-time-limit
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-void ACAN2517FD::isr (void) {
+#ifdef ARDUINO_ARCH_ESP32
+  void ACAN2517FD::isr (void) {
+    xSemaphoreGive (mISRSemaphore) ;
+  }
+#endif
+
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+//   INTERRUPT SERVICE ROUTINE (other than ESP32)
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+#ifndef ARDUINO_ARCH_ESP32
+  void ACAN2517FD::isr (void) {
+    isr_core () ;
+  }
+#endif
+
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+//   INTERRUPT SERVICE ROUTINES (common)
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+bool ACAN2517FD::isr_core (void) {
+  bool handled = false ;
   mSPI.beginTransaction (mSPISettings) ;
   const uint32_t it = readRegisterSPI (C1INT_REGISTER) ; // DS20005688B, page 34
   if ((it & (1 << 1)) != 0) { // Receive FIFO interrupt
     receiveInterrupt () ;
+    handled = true ;
   }
   if ((it & (1 << 0)) != 0) { // Transmit FIFO interrupt
     transmitInterrupt () ;
+    handled = true ;
   }
   if ((it & (1 << 2)) != 0) { // TBCIF interrupt
     writeByteRegisterSPI (C1INT_REGISTER, 1 << 2) ;
@@ -629,6 +722,7 @@ void ACAN2517FD::isr (void) {
     writeByteRegisterSPI (C1INT_REGISTER + 1, 1 << 4) ;
   }
   mSPI.endTransaction () ;
+  return handled ;
 }
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
