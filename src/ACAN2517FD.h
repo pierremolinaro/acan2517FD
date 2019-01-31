@@ -60,6 +60,7 @@ class ACAN2517FD {
   public: static const uint32_t kRequestedModeTimeOut               = 1 << 16 ;
   public: static const uint32_t kX10PLLNotReadyWithin1MS            = 1 << 17 ;
   public: static const uint32_t kReadBackErrorWithFullSpeedSPIClock = 1 << 18 ;
+  public: static const uint32_t kISRNotNullAndNoIntPin              = 1 << 19 ;
 
 //······················································································································
 //   Send a message
@@ -145,6 +146,12 @@ class ACAN2517FD {
   private: bool sendViaTXQ (const CANFDMessage & inMessage) ;
   private: bool enterInTransmitBuffer (const CANFDMessage & inMessage) ;
   private: void appendInControllerTxFIFO (const CANFDMessage & inMessage) ;
+
+//······················································································································
+//    Polling
+//······················································································································
+
+  public: void poll (void) ;
 
 //······················································································································
 //    Interrupt service routine

@@ -181,16 +181,16 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   }
 //----------------------------------- Check mINT has interrupt capability
   const int8_t itPin = digitalPinToInterrupt (mINT) ;
-  if (itPin == NOT_AN_INTERRUPT) {
+  if ((mINT != 255) && (itPin == NOT_AN_INTERRUPT)) {
     errorCode = kINTPinIsNotAnInterrupt ;
   }
-//----------------------------------- Check isr is not NULL
-  if (inInterruptServiceRoutine == NULL) {
+//----------------------------------- Check interrupt service routine is not null
+  if ((mINT != 255) && (inInterruptServiceRoutine == NULL)) {
     errorCode |= kISRIsNull ;
   }
-//----------------------------------- Check interrupt service routine is not null
-  if (inInterruptServiceRoutine == NULL) {
-    errorCode |= kISRIsNull ;
+//----------------------------------- Check consistency between ISR and INT pin
+  if ((mINT == 255) && (inInterruptServiceRoutine != NULL)) {
+    errorCode |= kISRNotNullAndNoIntPin ;
   }
 //----------------------------------- Check TXQ size is <= 32
   if (inSettings.mControllerTXQSize > 32) {
@@ -446,11 +446,15 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     }
     #ifdef ARDUINO_ARCH_ESP32
       xTaskCreate (myESP32Task, "ACAN2517Handler", 1024, this, 256, NULL) ;
-      attachInterrupt (itPin, inInterruptServiceRoutine, FALLING) ;
-    #else
-      attachInterrupt (itPin, inInterruptServiceRoutine, LOW) ;
-      mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
     #endif
+    if (mINT != 255) { // 255 means interrupt is not used
+      #ifdef ARDUINO_ARCH_ESP32
+        attachInterrupt (itPin, inInterruptServiceRoutine, FALLING) ;
+      #else
+        attachInterrupt (itPin, inInterruptServiceRoutine, LOW) ;
+        mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
+      #endif
+    }
   }
 //---
   return errorCode ;
@@ -674,6 +678,28 @@ bool ACAN2517FD::dispatchReceivedMessage (const tFilterMatchCallBack inFilterMat
   }
   return hasReceived ;
 }
+
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+//    POLLING (ESP32)
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+#ifdef ARDUINO_ARCH_ESP32
+  void ACAN2517FD::poll (void) {
+    xSemaphoreGive (mISRSemaphore) ;
+  }
+#endif
+
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+//    POLLING (other than ESP32)
+//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+#ifndef ARDUINO_ARCH_ESP32
+  void ACAN2517FD::poll (void) {
+    noInterrupts () ;
+      while (isr_core ()) {}
+    interrupts () ;
+  }
+#endif
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 //   INTERRUPT SERVICE ROUTINE (ESP32)
