@@ -88,7 +88,7 @@ The `gSendDate` variable handles sending a CAN message every 2000 ms.
 
 ### Use of Optional Reception Filtering
 
-The MCP2517 CAN Controller implements two acceptance masks and six acceptance filters. The driver API enables you to fully manage these registers.
+The MCP2517 CAN Controller implements 32 acceptance masks and 32 acceptance filters. The driver API enables you to fully manage these registers.
 
 For example (`LoopBackDemoTeensy3xWithFilters` sketch):
 
