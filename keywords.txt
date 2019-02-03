@@ -26,6 +26,7 @@ appendPassAllFilter	KEYWORD2
 appendFormatFilter	KEYWORD2
 appendFrameFilter	KEYWORD2
 appendFilter	KEYWORD2
+poll	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

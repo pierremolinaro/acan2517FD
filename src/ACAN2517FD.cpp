@@ -21,14 +21,8 @@
 //   - interrupt service routine performs a xSemaphoreGive on mISRSemaphore of can driver
 //   - this activates the myESP32Task task that performs "isr_core" that is done by interrupt service routine
 //     in "usual" Arduino;
-//   - as this task runs in parallel with setup / loop routines, SPI access is protected by a mutual access exclusion
-//     semaphore named gMutualExclusion.
-
-//——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
-
-#ifdef ARDUINO_ARCH_ESP32
-  static SemaphoreHandle_t gMutualExclusion = xSemaphoreCreateCounting (1, 1) ;
-#endif
+//   - as this task runs in parallel with setup / loop routines, SPI access is natively protected by the
+//     beginTransaction / endTransaction pair, that manages a mutex.
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
@@ -39,9 +33,7 @@
       xSemaphoreTake (canDriver->mISRSemaphore, portMAX_DELAY) ;
       bool loop = true ;
       while (loop) {
-        xSemaphoreTake (gMutualExclusion, portMAX_DELAY) ;
-          loop = canDriver->isr_core () ;
-        xSemaphoreGive (gMutualExclusion) ;
+        loop = canDriver->isr_core () ;
 	    }
     }
   }
@@ -330,6 +322,9 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     if (inSettings.mTXCANIsOpenDrain) {
       d |= 1 << 4 ; // TXCANOD
     }
+    if (inSettings.mINTIsOpenDrain) {
+      d |= 1 << 6 ; // INTOD
+    }
     writeByteRegister (IOCON_REGISTER + 3, d); // DS20005688B, page 24
   //----------------------------------- Configure ISO CRC Enable bit
     d = 1 << 6 ; // PXEDIS <-- 1
@@ -484,8 +479,6 @@ bool ACAN2517FD::tryToSend (const CANFDMessage & inMessage) {
   if (ok) {
     #if (defined (__MK64FX512__) || defined (__MK66FX1M0__))
       noInterrupts () ;
-    #elif defined (ARDUINO_ARCH_ESP32)
-      xSemaphoreTake (gMutualExclusion, portMAX_DELAY) ;
     #endif
       mSPI.beginTransaction (mSPISettings) ;
         if (inMessage.idx == 0) {
@@ -502,8 +495,6 @@ bool ACAN2517FD::tryToSend (const CANFDMessage & inMessage) {
       mSPI.endTransaction () ;
     #if (defined (__MK64FX512__) || defined (__MK66FX1M0__))
       interrupts () ;
-    #elif defined (ARDUINO_ARCH_ESP32)
-      xSemaphoreGive (gMutualExclusion) ;
     #endif
   }
   return ok ;
@@ -627,13 +618,13 @@ bool ACAN2517FD::sendViaTXQ (const CANFDMessage & inMessage) {
 
 bool ACAN2517FD::available (void) {
   #ifdef ARDUINO_ARCH_ESP32
-    xSemaphoreTake (gMutualExclusion, portMAX_DELAY) ;
+    mSPI.beginTransaction (mSPISettings) ; // For ensuring mutual exclusion access
   #else
     noInterrupts () ;
   #endif
     const bool hasReceivedMessage = mDriverReceiveBuffer.count () > 0 ;
   #ifdef ARDUINO_ARCH_ESP32
-    xSemaphoreGive (gMutualExclusion) ;
+    mSPI.endTransaction () ;
   #else
     interrupts () ;
   #endif
@@ -644,7 +635,7 @@ bool ACAN2517FD::available (void) {
 
 bool ACAN2517FD::receive (CANFDMessage & outMessage) {
   #ifdef ARDUINO_ARCH_ESP32
-    xSemaphoreTake (gMutualExclusion, portMAX_DELAY) ;
+    mSPI.beginTransaction (mSPISettings) ; // For ensuring mutual exclusion access
   #else
     noInterrupts () ;
   #endif
@@ -653,7 +644,7 @@ bool ACAN2517FD::receive (CANFDMessage & outMessage) {
       writeByteRegisterSPI (C1FIFOCON_REGISTER (receiveFIFOIndex), 1) ;
     }
   #ifdef ARDUINO_ARCH_ESP32
-    xSemaphoreGive (gMutualExclusion) ;
+    mSPI.endTransaction () ;
   #else
     interrupts () ;
   #endif
