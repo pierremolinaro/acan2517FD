@@ -12,21 +12,21 @@
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
 uint32_t ACAN2517FDSettings::sysClock (const Oscillator inOscillator) {
-  uint32_t sysClock = 40 * 1000 * 1000 ;
+  uint32_t sysClock = 40UL * 1000 * 1000 ;
   switch (inOscillator) {
   case OSC_4MHz:
-    sysClock =  4 * 1000 * 1000 ;
+    sysClock =  4UL * 1000 * 1000 ;
     break ;
   case OSC_4MHz_DIVIDED_BY_2:
-    sysClock =  2 * 1000 * 1000 ;
+    sysClock =  2UL * 1000 * 1000 ;
     break ;
   case OSC_4MHz10xPLL_DIVIDED_BY_2 :
   case OSC_40MHz_DIVIDED_BY_2:
   case OSC_20MHz:
-    sysClock = 20 * 1000 * 1000 ;
+    sysClock = 20UL * 1000 * 1000 ;
     break ;
   case OSC_20MHz_DIVIDED_BY_2:
-    sysClock = 10 * 1000 * 1000 ;
+    sysClock = 10UL * 1000 * 1000 ;
     break ;
   case OSC_4MHz10xPLL:
   case OSC_40MHz:
@@ -137,8 +137,6 @@ mDataBitRateFactor (inDataBitRateFactor) {
     uint32_t dataPS2 = bestDataTQCount / 5 ; // For sampling point at 80%
     if (dataPS2 == 0) {
       dataPS2 = 1 ;
-//    }else if (dataPS2 > MAX_DATA_PHASE_SEGMENT_2) {
-//      dataPS2 = MAX_DATA_PHASE_SEGMENT_2 ;
     }
   //--- Compute data PS1 (1 <= PS1 <= 32)
     uint32_t dataPS1 = bestDataTQCount - dataPS2 - 1 /* Sync Seg */ ;
@@ -155,8 +153,6 @@ mDataBitRateFactor (inDataBitRateFactor) {
     uint32_t arbitrationPS2 = arbitrationTQCount / 5 ; // For sampling point at 80%
     if (arbitrationPS2 == 0) {
       arbitrationPS2 = 1 ;
-//    }else if (PS2 > MAX_ARBITRATION_PHASE_SEGMENT_2) {
-//      PS2 = MAX_ARBITRATION_PHASE_SEGMENT_2 ;
     }
   //--- Compute PS1 (1 <= PS1 <= 256)
     uint32_t arbitrationPS1 = arbitrationTQCount - arbitrationPS2 - 1 /* Sync Seg */ ;

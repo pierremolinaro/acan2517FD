@@ -41,26 +41,26 @@ class ACAN2517FD {
                           const ACAN2517FDFilters & inFilters) ;
 
 //--- Error code returned by begin
-  public: static const uint32_t kRequestedConfigurationModeTimeOut  = 1 <<  0 ;
-  public: static const uint32_t kReadBackErrorWith1MHzSPIClock      = 1 <<  1 ;
-  public: static const uint32_t kTooFarFromDesiredBitRate           = 1 <<  2 ;
-  public: static const uint32_t kInconsistentBitRateSettings        = 1 <<  3 ;
-  public: static const uint32_t kINTPinIsNotAnInterrupt             = 1 <<  4 ;
-  public: static const uint32_t kISRIsNull                          = 1 <<  5 ;
-  public: static const uint32_t kFilterDefinitionError              = 1 <<  6 ;
-  public: static const uint32_t kMoreThan32Filters                  = 1 <<  7 ;
-  public: static const uint32_t kControllerReceiveFIFOSizeIsZero    = 1 <<  8 ;
-  public: static const uint32_t kControllerReceiveFIFOSizeGreaterThan32 = 1 << 9 ;
-  public: static const uint32_t kControllerTransmitFIFOSizeIsZero    = 1 << 10 ;
-  public: static const uint32_t kControllerTransmitFIFOSizeGreaterThan32 = 1 << 11 ;
-  public: static const uint32_t kControllerRamUsageGreaterThan2048   = 1 << 12 ;
-  public: static const uint32_t kControllerTXQPriorityGreaterThan31  = 1 << 13 ;
-  public: static const uint32_t kControllerTransmitFIFOPriorityGreaterThan31 = 1 << 14 ;
-  public: static const uint32_t kControllerTXQSizeGreaterThan32     = 1 << 15 ;
-  public: static const uint32_t kRequestedModeTimeOut               = 1 << 16 ;
-  public: static const uint32_t kX10PLLNotReadyWithin1MS            = 1 << 17 ;
-  public: static const uint32_t kReadBackErrorWithFullSpeedSPIClock = 1 << 18 ;
-  public: static const uint32_t kISRNotNullAndNoIntPin              = 1 << 19 ;
+  public: static const uint32_t kRequestedConfigurationModeTimeOut  = ((uint32_t) 1) <<  0 ;
+  public: static const uint32_t kReadBackErrorWith1MHzSPIClock      = ((uint32_t) 1) <<  1 ;
+  public: static const uint32_t kTooFarFromDesiredBitRate           = ((uint32_t) 1) <<  2 ;
+  public: static const uint32_t kInconsistentBitRateSettings        = ((uint32_t) 1) <<  3 ;
+  public: static const uint32_t kINTPinIsNotAnInterrupt             = ((uint32_t) 1) <<  4 ;
+  public: static const uint32_t kISRIsNull                          = ((uint32_t) 1) <<  5 ;
+  public: static const uint32_t kFilterDefinitionError              = ((uint32_t) 1) <<  6 ;
+  public: static const uint32_t kMoreThan32Filters                  = ((uint32_t) 1) <<  7 ;
+  public: static const uint32_t kControllerReceiveFIFOSizeIsZero    = ((uint32_t) 1) <<  8 ;
+  public: static const uint32_t kControllerReceiveFIFOSizeGreaterThan32 = ((uint32_t) 1) << 9 ;
+  public: static const uint32_t kControllerTransmitFIFOSizeIsZero    = ((uint32_t) 1) << 10 ;
+  public: static const uint32_t kControllerTransmitFIFOSizeGreaterThan32 = ((uint32_t) 1) << 11 ;
+  public: static const uint32_t kControllerRamUsageGreaterThan2048   = ((uint32_t) 1) << 12 ;
+  public: static const uint32_t kControllerTXQPriorityGreaterThan31  = ((uint32_t) 1) << 13 ;
+  public: static const uint32_t kControllerTransmitFIFOPriorityGreaterThan31 = ((uint32_t) 1) << 14 ;
+  public: static const uint32_t kControllerTXQSizeGreaterThan32     = ((uint32_t) 1) << 15 ;
+  public: static const uint32_t kRequestedModeTimeOut               = ((uint32_t) 1) << 16 ;
+  public: static const uint32_t kX10PLLNotReadyWithin1MS            = ((uint32_t) 1) << 17 ;
+  public: static const uint32_t kReadBackErrorWithFullSpeedSPIClock = ((uint32_t) 1) << 18 ;
+  public: static const uint32_t kISRNotNullAndNoIntPin              = ((uint32_t) 1) << 19 ;
 
 //······················································································································
 //   Send a message
@@ -107,13 +107,13 @@ class ACAN2517FD {
 //    Receive buffer
 //······················································································································
 
-  private: ACANBuffer mDriverReceiveBuffer ;
+  private: ACANFDBuffer mDriverReceiveBuffer ;
 
 //······················································································································
 //    Transmit buffer
 //······················································································································
 
-  private: ACANBuffer mDriverTransmitBuffer ;
+  private: ACANFDBuffer mDriverTransmitBuffer ;
 
   public: uint32_t driverTransmitBufferSize (void) const { return mDriverTransmitBuffer.size () ; }
 
@@ -169,8 +169,8 @@ class ACAN2517FD {
 //    No copy
 //······················································································································
 
-  private: ACAN2517FD (const ACAN2517FD &) ;
-  private: ACAN2517FD & operator = (const ACAN2517FD &) ;
+  private: ACAN2517FD (const ACAN2517FD &) = delete ;
+  private: ACAN2517FD & operator = (const ACAN2517FD &) = delete ;
 
 //······················································································································
 

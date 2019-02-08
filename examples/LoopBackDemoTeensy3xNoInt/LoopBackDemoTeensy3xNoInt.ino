@@ -15,11 +15,11 @@
 //  CS input of MCP2517 should be connected to a digital output port
 //——————————————————————————————————————————————————————————————————————————————
 
-static const byte MCP2517_SCK = 32 ; // SCK input of MCP2517 
-static const byte MCP2517_SDI =  0 ; // SDI input of MCP2517  
-static const byte MCP2517_SDO =  1 ; // SDO output of MCP2517 
+static const byte MCP2517_SCK = 32 ; // SCK input of MCP2517
+static const byte MCP2517_SDI =  0 ; // SDI input of MCP2517
+static const byte MCP2517_SDO =  1 ; // SDO output of MCP2517
 
-static const byte MCP2517_CS  = 31 ; // CS input of MCP2517 
+static const byte MCP2517_CS  = 31 ; // CS input of MCP2517
 
 //——————————————————————————————————————————————————————————————————————————————
 //  ACAN2517FD Driver object
@@ -95,9 +95,9 @@ void setup () {
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-static unsigned gBlinkLedDate = 0 ;
-static unsigned gReceivedFrameCount = 0 ;
-static unsigned gSentFrameCount = 0 ;
+static uint32_t gBlinkLedDate = 0 ;
+static uint32_t gReceivedFrameCount = 0 ;
+static uint32_t gSentFrameCount = 0 ;
 
 //——————————————————————————————————————————————————————————————————————————————
 

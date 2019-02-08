@@ -3,7 +3,7 @@
 //——————————————————————————————————————————————————————————————————————————————
 
 #ifndef ARDUINO_ARCH_ESP32
-  #error "Select an ESP32 board" 
+  #error "Select an ESP32 board"
 #endif
 
 //——————————————————————————————————————————————————————————————————————————————
@@ -23,16 +23,16 @@
 //  Notes:
 //    - GPIOs 34 to 39 are GPIs – input only pins. These pins don’t have internal pull-ups or
 //      pull-down resistors. They can’t be used as outputs.
-//    - some pins do not support INPUT_PULLUP (see https://www.esp32.com/viewtopic.php?t=439) 
+//    - some pins do not support INPUT_PULLUP (see https://www.esp32.com/viewtopic.php?t=439)
 //    - All GPIOs can be configured as interrupts
 // See https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
 //——————————————————————————————————————————————————————————————————————————————
 
-static const byte MCP2517_SCK  = 26 ; // SCK input of MCP2517 
-static const byte MCP2517_MOSI = 19 ; // SDI input of MCP2517  
-static const byte MCP2517_MISO = 18 ; // SDO output of MCP2517 
+static const byte MCP2517_SCK  = 26 ; // SCK input of MCP2517
+static const byte MCP2517_MOSI = 19 ; // SDI input of MCP2517
+static const byte MCP2517_MISO = 18 ; // SDO output of MCP2517
 
-static const byte MCP2517_CS  = 16 ; // CS input of MCP2517 
+static const byte MCP2517_CS  = 16 ; // CS input of MCP2517
 static const byte MCP2517_INT = 32 ; // INT output of MCP2517
 
 //——————————————————————————————————————————————————————————————————————————————
@@ -94,11 +94,11 @@ void setup () {
 //   LOOP
 //——————————————————————————————————————————————————————————————————————————————
 
-static unsigned gBlinkLedDate = 0 ;
-static unsigned gReceivedFrameCount = 0 ;
-static unsigned gSentFrameCount = 0 ;
+static uint32_t gBlinkLedDate = 0 ;
+static uint32_t gReceivedFrameCount = 0 ;
+static uint32_t gSentFrameCount = 0 ;
 
-static const unsigned MESSAGE_COUNT = 100 * 1000 ;
+static const uint32_t MESSAGE_COUNT = 100UL * 1000 ;
 
 //——————————————————————————————————————————————————————————————————————————————
 

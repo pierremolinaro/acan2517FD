@@ -16,11 +16,11 @@
 //  INT output of MCP2517 should be connected to a digital input port, with interrupt capability
 //——————————————————————————————————————————————————————————————————————————————
 
-static const byte MCP2517_SCK = 32 ; // SCK input of MCP2517 
-static const byte MCP2517_SDI =  0 ; // SDI input of MCP2517  
-static const byte MCP2517_SDO =  1 ; // SDO output of MCP2517 
+static const byte MCP2517_SCK = 32 ; // SCK input of MCP2517
+static const byte MCP2517_SDI =  0 ; // SDI input of MCP2517
+static const byte MCP2517_SDO =  1 ; // SDO output of MCP2517
 
-static const byte MCP2517_CS  = 31 ; // CS input of MCP2517 
+static const byte MCP2517_CS  = 31 ; // CS input of MCP2517
 static const byte MCP2517_INT = 38 ; // INT output of MCP2517
 
 //——————————————————————————————————————————————————————————————————————————————
@@ -96,7 +96,7 @@ void setup () {
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-static unsigned gBlinkLedDate = 0 ;
+static uint32_t gBlinkLedDate = 0 ;
 static uint8_t gPhase = 0 ;
 
 //——————————————————————————————————————————————————————————————————————————————
@@ -107,10 +107,10 @@ void loop() {
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
     CANFDMessage frame ;
     if (gPhase == 0) {
-      frame.id = 0x123 ; // Will match filter #0 
+      frame.id = 0x123 ; // Will match filter #0
     }else if (gPhase == 1) {
       frame.ext = true ;
-      frame.id = 0x12345678 ; // Will match filter #1 
+      frame.id = 0x12345678 ; // Will match filter #1
     }else if (gPhase == 2) {
       frame.id = 0x334 ; // Will match filter #2
     }

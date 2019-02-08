@@ -231,25 +231,25 @@ class ACAN2517FDSettings {
 //    Constants returned by CANBitSettingConsistency
 //······················································································································
 
-  public: static const uint32_t kBitRatePrescalerIsZero                 = 1 <<  0 ;
-  public: static const uint32_t kBitRatePrescalerIsGreaterThan256       = 1 <<  1 ;
-  public: static const uint32_t kArbitrationPhaseSegment1IsLowerThan2       = 1 <<  2 ;
-  public: static const uint32_t kArbitrationPhaseSegment1IsGreaterThan256   = 1 <<  3 ;
-  public: static const uint32_t kArbitrationPhaseSegment2IsZero             = 1 <<  4 ;
-  public: static const uint32_t kArbitrationPhaseSegment2IsGreaterThan128   = 1 <<  5 ;
-  public: static const uint32_t kArbitrationSJWIsZero                       = 1 <<  6 ;
-  public: static const uint32_t kArbitrationSJWIsGreaterThan128             = 1 <<  7 ;
-  public: static const uint32_t kArbitrationSJWIsGreaterThanPhaseSegment1   = 1 <<  8 ;
-  public: static const uint32_t kArbitrationSJWIsGreaterThanPhaseSegment2   = 1 <<  9 ;
-  public: static const uint32_t kArbitrationTQCountNotDivisibleByDataBitRateFactor = 1 << 10 ;
-  public: static const uint32_t kDataPhaseSegment1IsLowerThan2          = 1 << 11 ;
-  public: static const uint32_t kDataPhaseSegment1IsGreaterThan32       = 1 << 12 ;
-  public: static const uint32_t kDataPhaseSegment2IsZero                = 1 << 13 ;
-  public: static const uint32_t kDataPhaseSegment2IsGreaterThan16       = 1 << 14 ;
-  public: static const uint32_t kDataSJWIsZero                          = 1 << 15 ;
-  public: static const uint32_t kDataSJWIsGreaterThan16                 = 1 << 16 ;
-  public: static const uint32_t kDataSJWIsGreaterThanPhaseSegment1      = 1 << 17 ;
-  public: static const uint32_t kDataSJWIsGreaterThanPhaseSegment2      = 1 << 18 ;
+  public: static const uint32_t kBitRatePrescalerIsZero                 = ((uint32_t) 1) <<  0 ;
+  public: static const uint32_t kBitRatePrescalerIsGreaterThan256       = ((uint32_t) 1) <<  1 ;
+  public: static const uint32_t kArbitrationPhaseSegment1IsLowerThan2       = ((uint32_t) 1) <<  2 ;
+  public: static const uint32_t kArbitrationPhaseSegment1IsGreaterThan256   = ((uint32_t) 1) <<  3 ;
+  public: static const uint32_t kArbitrationPhaseSegment2IsZero             = ((uint32_t) 1) <<  4 ;
+  public: static const uint32_t kArbitrationPhaseSegment2IsGreaterThan128   = ((uint32_t) 1) <<  5 ;
+  public: static const uint32_t kArbitrationSJWIsZero                       = ((uint32_t) 1) <<  6 ;
+  public: static const uint32_t kArbitrationSJWIsGreaterThan128             = ((uint32_t) 1) <<  7 ;
+  public: static const uint32_t kArbitrationSJWIsGreaterThanPhaseSegment1   = ((uint32_t) 1) <<  8 ;
+  public: static const uint32_t kArbitrationSJWIsGreaterThanPhaseSegment2   = ((uint32_t) 1) <<  9 ;
+  public: static const uint32_t kArbitrationTQCountNotDivisibleByDataBitRateFactor = ((uint32_t) 1) << 10 ;
+  public: static const uint32_t kDataPhaseSegment1IsLowerThan2          = ((uint32_t) 1) << 11 ;
+  public: static const uint32_t kDataPhaseSegment1IsGreaterThan32       = ((uint32_t) 1) << 12 ;
+  public: static const uint32_t kDataPhaseSegment2IsZero                = ((uint32_t) 1) << 13 ;
+  public: static const uint32_t kDataPhaseSegment2IsGreaterThan16       = ((uint32_t) 1) << 14 ;
+  public: static const uint32_t kDataSJWIsZero                          = ((uint32_t) 1) << 15 ;
+  public: static const uint32_t kDataSJWIsGreaterThan16                 = ((uint32_t) 1) << 16 ;
+  public: static const uint32_t kDataSJWIsGreaterThanPhaseSegment1      = ((uint32_t) 1) << 17 ;
+  public: static const uint32_t kDataSJWIsGreaterThanPhaseSegment2      = ((uint32_t) 1) << 18 ;
 
 //······················································································································
 // Max values

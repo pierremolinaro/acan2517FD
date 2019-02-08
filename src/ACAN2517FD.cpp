@@ -225,14 +225,14 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     pinMode (mCS, OUTPUT) ;
     deassertCS () ;
   //----------------------------------- Set SPI clock to 1 MHz
-    mSPISettings = SPISettings (1 * 1000 * 1000, MSBFIRST, SPI_MODE0) ;
+    mSPISettings = SPISettings (1000UL * 1000, MSBFIRST, SPI_MODE0) ;
   //----------------------------------- Request configuration
     writeByteRegister (C1CON_REGISTER + 3, 0x04 | (1 << 3)) ; // Request configuration mode, abort all transmissions
   //----------------------------------- Wait (2 ms max) until requested mode is reached
     bool wait = true ;
     const uint32_t deadline = millis () + 2 ;
     while (wait) {
-      const uint32_t actualMode = (readByteRegister (C1CON_REGISTER + 2) >> 5) & 0x07 ;
+      const uint8_t actualMode = (readByteRegister (C1CON_REGISTER + 2) >> 5) & 0x07 ;
       wait = actualMode != 0x04 ;
       if (wait && (millis () >= deadline)) {
         errorCode |= kRequestedConfigurationModeTimeOut ;
@@ -254,7 +254,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
 //----------------------------------- Now, set internal clock with OSC register
 //     Bit 0: (rw) 1 --> 10xPLL
 //     Bit 4: (rw) 0 --> SCLK is divided by 1, 1 --> SCLK is divided by 2
-//     Bits 5-6: Clovk Output Divisor
+//     Bits 5-6: Clock Output Divisor
   if (errorCode == 0) {
     uint8_t pll = 0 ; // No PLL
     uint8_t osc = 0 ; // Divide by 1
@@ -295,10 +295,11 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     }
   }
 //----------------------------------- Set full speed clock
-  mSPISettings = SPISettings (inSettings.sysClock () / 2, MSBFIRST, SPI_MODE0) ;
+//  mSPISettings = SPISettings (inSettings.sysClock () / 2, MSBFIRST, SPI_MODE0) ;
 //----------------------------------- Checking SPI connection is on (with a full speed clock)
 //    We write and the read back 2517 RAM at address 0x400
   for (uint32_t i=1 ; (i != 0) && (errorCode == 0) ; i <<= 1) {
+    // Serial.println (i, HEX) ;
     writeRegister (0x400, i) ;
     const uint32_t readBackValue = readRegister (0x400) ;
     if (readBackValue != i) {
@@ -308,9 +309,11 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
 //----------------------------------- Install interrupt, configure external interrupt
   if (errorCode == 0) {
   //----------------------------------- Configure transmit and receive buffers
+    Serial.println ("init buffers") ;
     mDriverTransmitBuffer.initWithSize (inSettings.mDriverTransmitFIFOSize) ;
     mDriverReceiveBuffer.initWithSize (inSettings.mDriverReceiveFIFOSize) ;
   //----------------------------------- Reset RAM
+    Serial.println ("Reset RAM") ;
     for (uint16_t address = 0x400 ; address < 0xC00 ; address += 4) {
       writeRegister (address, 0) ;
     }
@@ -465,6 +468,7 @@ bool ACAN2517FD::tryToSend (const CANMessage & inMessage) {
   message.rtr = inMessage.rtr ;
   message.ext = inMessage.ext ;
   message.len = inMessage.len ;
+  message.idx = inMessage.idx ;
   message.data64 [0] = inMessage.data64 ;
 //---
   return tryToSend (message) ;

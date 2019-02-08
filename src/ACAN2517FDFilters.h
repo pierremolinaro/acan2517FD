@@ -95,8 +95,8 @@ class ACAN2517FDFilters {
 
   public: void appendFormatFilter (const tFrameFormat inFormat, // Accept any identifier
                                    const ACANFDCallBackRoutine inCallBackRoutine) {
-    Filter * f = new Filter (1 << 30,
-                             (inFormat == kExtended) ? (1 << 30) : 0,
+    Filter * f = new Filter (((uint32_t) 1) << 30,
+                             (inFormat == kExtended) ? (((uint32_t) 1) << 30) : 0,
                              inCallBackRoutine) ;
     if (mFirstFilter == NULL) {
       mFirstFilter = f ;
@@ -123,10 +123,10 @@ class ACAN2517FDFilters {
       mFilterErrorIndex = mFilterCount ;
     }
   //--- Re order bits if extended filter
-    const uint32_t mask = (1 << 30) | ((inFormat == kExtended) ? 0x1FFFFFFF : 0x7FF) ;
+    const uint32_t mask = (((uint32_t) 1) << 30) | ((inFormat == kExtended) ? 0x1FFFFFFF : 0x7FF) ;
     uint32_t acceptance ;
     if (inFormat == kExtended) {
-      acceptance = ((inIdentifier >> 18) & 0x7FF) | ((inIdentifier & 0x3FFFF) << 11) | (1 << 30) ;
+      acceptance = ((inIdentifier >> 18) & 0x7FF) | ((inIdentifier & 0x3FFFF) << 11) | (((uint32_t) 1) << 30) ;
     }else{
       acceptance = inIdentifier ;
     }
@@ -173,7 +173,7 @@ class ACAN2517FDFilters {
       mFilterErrorIndex = mFilterCount ;
     }
   //--- Re order bits if extended filter
-    uint32_t mask = 1 << 30 ;
+    uint32_t mask = ((uint32_t) 1) << 30 ;
     if (inFormat == kExtended) {
       mask |= ((inMask >> 18) & 0x7FF) | ((inMask & 0x3FFFF) << 11) ;
     }else{
@@ -181,7 +181,7 @@ class ACAN2517FDFilters {
     }
     uint32_t acceptance ;
     if (inFormat == kExtended) {
-      acceptance = ((inAcceptance >> 18) & 0x7FF) | ((inAcceptance & 0x3FFFF) << 11) | (1 << 30) ;
+      acceptance = ((inAcceptance >> 18) & 0x7FF) | ((inAcceptance & 0x3FFFF) << 11) | (((uint32_t) 1) << 30) ;
     }else{
       acceptance = inAcceptance ;
     }
@@ -220,8 +220,8 @@ class ACAN2517FDFilters {
 //   NO COPY
 //······················································································································
 
-  private: ACAN2517FDFilters (const ACAN2517FDFilters &) ;
-  private: ACAN2517FDFilters & operator = (const ACAN2517FDFilters &) ;
+  private: ACAN2517FDFilters (const ACAN2517FDFilters &) = delete ;
+  private: ACAN2517FDFilters & operator = (const ACAN2517FDFilters &) = delete ;
 
 //······················································································································
 //   Friend

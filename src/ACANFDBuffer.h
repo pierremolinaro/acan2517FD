@@ -14,13 +14,13 @@
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-class ACANBuffer {
+class ACANFDBuffer {
 
 //······················································································································
 // Default constructor
 //······················································································································
 
-  public: ACANBuffer (void)  :
+  public: ACANFDBuffer (void)  :
   mBuffer (NULL),
   mSize (0),
   mReadIndex (0),
@@ -33,7 +33,7 @@ class ACANBuffer {
 // Destructor
 //······················································································································
 
-  public: ~ ACANBuffer (void) {
+  public: ~ ACANFDBuffer (void) {
     delete [] mBuffer ;
   }
 
@@ -110,8 +110,8 @@ class ACANBuffer {
 // No copy
 //······················································································································
 
-  private: ACANBuffer (const ACANBuffer &) ;
-  private: ACANBuffer & operator = (const ACANBuffer &) ;
+  private: ACANFDBuffer (const ACANFDBuffer &) = delete ;
+  private: ACANFDBuffer & operator = (const ACANFDBuffer &) = delete ;
 } ;
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
