@@ -239,7 +239,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
         wait = false ;
       }
     }
-  //----------------------------------- Reset MCP2517FD (allways use a 1 MHz clock)
+  //----------------------------------- Reset MCP2517FD (always use a 1 MHz clock)
     reset2517FD () ;
   }
 //----------------------------------- Check SPI connection is on (with a 1 MHz clock)
@@ -318,61 +318,61 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
       writeRegister (address, 0) ;
     }
   //----------------------------------- Configure CLKO pin
-    uint8_t d = 0x03 ; // Respect PM1-PM0 default values
+    uint8_t data8 = 0x03 ; // Respect PM1-PM0 default values
     if (inSettings.mCLKOPin == ACAN2517FDSettings::SOF) {
-      d |= 1 << 5 ; // SOF
+      data8 |= 1 << 5 ; // SOF
     }
     if (inSettings.mTXCANIsOpenDrain) {
-      d |= 1 << 4 ; // TXCANOD
+      data8 |= 1 << 4 ; // TXCANOD
     }
     if (inSettings.mINTIsOpenDrain) {
-      d |= 1 << 6 ; // INTOD
+      data8 |= 1 << 6 ; // INTOD
     }
-    writeByteRegister (IOCON_REGISTER + 3, d); // DS20005688B, page 24
+    writeByteRegister (IOCON_REGISTER + 3, data8); // DS20005688B, page 24
   //----------------------------------- Configure ISO CRC Enable bit
-    d = 1 << 6 ; // PXEDIS <-- 1
+    data8 = 1 << 6 ; // PXEDIS <-- 1
     if (inSettings.mISOCRCEnabled) {
-      d |= 1 << 5 ; //  Enable ISO CRC in CAN FD Frames bit
+      data8 |= 1 << 5 ; //  Enable ISO CRC in CAN FD Frames bit
     }
-    writeByteRegister (IOCON_REGISTER, d); // DS20005688B, page 24
+    writeByteRegister (IOCON_REGISTER, data8); // DS20005688B, page 24
   //----------------------------------- Configure C1DTC (DS20005688B, page 29)
-//     data = 1 << 25 ; // Enable Edge Filtering during Bus Integration state bit
-//     data |= 1 << 17 ; // Auto TDC
-//     writeRegister (C1TDC_REGISTER, data);
+    uint32_t data32 = 1UL << 25 ; // Enable Edge Filtering during Bus Integration state bit (added in 1.1.4)
+    data32 |= 1UL << 17 ; // Auto TDC
+    writeRegister (C1TDC_REGISTER, data32);
   //----------------------------------- Configure TXQ
-    d = inSettings.mControllerTXQBufferRetransmissionAttempts ;
-    d <<= 5 ;
-    d |= inSettings.mControllerTXQBufferPriority ;
-    writeByteRegister (C1TXQCON_REGISTER + 2, d); // DS20005688B, page 48
+    data8 = inSettings.mControllerTXQBufferRetransmissionAttempts ;
+    data8 <<= 5 ;
+    data8 |= inSettings.mControllerTXQBufferPriority ;
+    writeByteRegister (C1TXQCON_REGISTER + 2, data8); // DS20005688B, page 48
   // Bit 5-7: Payload Size bits
   // Bit 4-0: TXQ size
     mUsesTXQ = inSettings.mControllerTXQSize > 0 ;
-    d = inSettings.mControllerTXQSize - 1 ;
-    d |= inSettings.mControllerTXQBufferPayload << 5 ; // Payload
-    writeByteRegister (C1TXQCON_REGISTER + 3, d); // DS20005688B, page 48
+    data8 = inSettings.mControllerTXQSize - 1 ;
+    data8 |= inSettings.mControllerTXQBufferPayload << 5 ; // Payload
+    writeByteRegister (C1TXQCON_REGISTER + 3, data8); // DS20005688B, page 48
     mTXQBufferPayload = ACAN2517FDSettings::objectSizeForPayload (inSettings.mControllerTXQBufferPayload) ;
   //----------------------------------- Configure TXQ and TEF
   // Bit 4: Enable Transmit Queue bit ---> 1: Enable TXQ and reserves space in RAM
   // Bit 3: Store in Transmit Event FIFO bit ---> 0: Don’t save transmitted messages in TEF
-    d = mUsesTXQ ? 0x04 : 0x00 ;
-    writeByteRegister (C1CON_REGISTER + 2, d); // DS20005688B, page 24
+    data8 = mUsesTXQ ? (1 << 4) : 0x00 ; // Bug fix in 1.1.4 (thanks to danielhenz)
+    writeByteRegister (C1CON_REGISTER + 2, data8); // DS20005688B, page 24
   //----------------------------------- Configure RX FIFO (C1FIFOCON, DS20005688B, page 52)
-    d = inSettings.mControllerReceiveFIFOSize - 1 ; // Set receive FIFO size
-    d |= inSettings.mControllerReceiveFIFOPayload << 5 ; // Payload
-    writeByteRegister (C1FIFOCON_REGISTER (1) + 3, d) ;
-    d = 1 ; // Interrupt Enabled for FIFO not Empty (TFNRFNIE)
-    writeByteRegister (C1FIFOCON_REGISTER (1), d) ;
+    data8 = inSettings.mControllerReceiveFIFOSize - 1 ; // Set receive FIFO size
+    data8 |= inSettings.mControllerReceiveFIFOPayload << 5 ; // Payload
+    writeByteRegister (C1FIFOCON_REGISTER (1) + 3, data8) ;
+    data8 = 1 ; // Interrupt Enabled for FIFO not Empty (TFNRFNIE)
+    writeByteRegister (C1FIFOCON_REGISTER (1), data8) ;
     mReceiveFIFOPayload = ACAN2517FDSettings::objectSizeForPayload (inSettings.mControllerReceiveFIFOPayload) ;
   //----------------------------------- Configure TX FIFO (C1FIFOCON, DS20005688B, page 52)
-    d = inSettings.mControllerTransmitFIFORetransmissionAttempts ;
-    d <<= 5 ;
-    d |= inSettings.mControllerTransmitFIFOPriority ;
-    writeByteRegister (C1FIFOCON_REGISTER (2) + 2, d) ;
-    d = inSettings.mControllerTransmitFIFOSize - 1 ; // Set transmit FIFO size
-    d |= inSettings.mControllerTransmitFIFOPayload << 5 ; // Payload
-    writeByteRegister (C1FIFOCON_REGISTER (2) + 3, d) ;
-    d = 1 << 7 ; // FIFO 2 is a Tx FIFO
-    writeByteRegister (C1FIFOCON_REGISTER (2), d) ;
+    data8 = inSettings.mControllerTransmitFIFORetransmissionAttempts ;
+    data8 <<= 5 ;
+    data8 |= inSettings.mControllerTransmitFIFOPriority ;
+    writeByteRegister (C1FIFOCON_REGISTER (2) + 2, data8) ;
+    data8 = inSettings.mControllerTransmitFIFOSize - 1 ; // Set transmit FIFO size
+    data8 |= inSettings.mControllerTransmitFIFOPayload << 5 ; // Payload
+    writeByteRegister (C1FIFOCON_REGISTER (2) + 3, data8) ;
+    data8 = 1 << 7 ; // FIFO 2 is a Tx FIFO
+    writeByteRegister (C1FIFOCON_REGISTER (2), data8) ;
     mTransmitFIFOPayload = ACAN2517FDSettings::objectSizeForPayload (inSettings.mControllerTransmitFIFOPayload) ;
   //----------------------------------- Configure receive filters
     uint8_t filterIndex = 0 ;
@@ -382,16 +382,16 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
       mCallBackFunctionArray [filterIndex] = filter->mCallBackRoutine ;
       writeRegister (C1MASK_REGISTER (filterIndex), filter->mFilterMask) ; // DS20005688B, page 61
       writeRegister (C1FLTOBJ_REGISTER (filterIndex), filter->mAcceptanceFilter) ; // DS20005688B, page 60
-      d = 1 << 7 ; // Filter is enabled
-      d |= 1 ; // Message matching filter is stored in FIFO1
-      writeByteRegister (C1FLTCON_REGISTER (filterIndex), d) ; // DS20005688B, page 58
+      data8 = 1 << 7 ; // Filter is enabled
+      data8 |= 1 ; // Message matching filter is stored in FIFO1
+      writeByteRegister (C1FLTCON_REGISTER (filterIndex), data8) ; // DS20005688B, page 58
       filter = filter->mNextFilter ;
       filterIndex += 1 ;
     }
   //----------------------------------- Activate interrupts (C1INT, DS20005688B page 34)
-    d  = (1 << 1) ; // Receive FIFO Interrupt Enable
-    d |= (1 << 0) ; // Transmit FIFO Interrupt Enable
-    writeByteRegister (C1INT_REGISTER + 2, d) ;
+    data8  = (1 << 1) ; // Receive FIFO Interrupt Enable
+    data8 |= (1 << 0) ; // Transmit FIFO Interrupt Enable
+    writeByteRegister (C1INT_REGISTER + 2, data8) ;
     writeByteRegister (C1INT_REGISTER + 3, 0) ;
   //----------------------------------- Program nominal bit rate (C1NBTCFG register)
   //  bits 31-24: BRP - 1
@@ -418,13 +418,13 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   //  bits 3-0: SJW - 1
     mHasDataBitRate = inSettings.mDataBitRateFactor != 1 ;
     if (mHasDataBitRate) {
-      data = inSettings.mBitRatePrescaler - 1 ;
+      data = ((uint32_t) inSettings.mBitRatePrescaler) - 1 ;
       data <<= 8 ;
-      data |= inSettings.mDataPhaseSegment1 - 1 ;
+      data |= ((uint32_t) inSettings.mDataPhaseSegment1) - 1 ;
       data <<= 8 ;
-      data |= inSettings.mDataPhaseSegment2 - 1 ;
+      data |= ((uint32_t) inSettings.mDataPhaseSegment2) - 1 ;
       data <<= 8 ;
-      data |= inSettings.mDataSJW - 1 ;
+      data |= ((uint32_t) inSettings.mDataSJW) - 1 ;
       writeRegister (C1DBTCFG_REGISTER, data) ;
     }
   //----------------------------------- Request mode (C1CON_REGISTER + 3)
@@ -516,9 +516,9 @@ bool ACAN2517FD::enterInTransmitBuffer (const CANFDMessage & inMessage) {
   //--- If controller FIFO is full, enable "FIFO not full" interrupt
     const uint8_t status = readByteRegisterSPI (C1FIFOSTA_REGISTER (2)) ;
     if ((status & 1) == 0) { // FIFO is full
-      uint8_t d = 1 << 7 ;  // FIFO is a transmit FIFO
-      d |= 1 ; // Enable "FIFO not full" interrupt
-      writeByteRegisterSPI (C1FIFOCON_REGISTER (2), d) ;
+      uint8_t data8 = 1 << 7 ;  // FIFO is a transmit FIFO
+      data8 |= 1 ; // Enable "FIFO not full" interrupt
+      writeByteRegisterSPI (C1FIFOCON_REGISTER (2), data8) ;
       mControllerTxFIFOFull = true ;
     }
   }
@@ -547,19 +547,19 @@ void ACAN2517FD::appendInControllerTxFIFO (const CANFDMessage & inMessage) {
   const uint16_t ramAddress = (uint16_t) (0x400 + readRegisterSPI (C1FIFOUA_REGISTER (2))) ;
   assertCS () ;
     writeCommandSPI (ramAddress) ;
-    //--- Write identifier: if an extended frame is sent, identifier bits sould be reordered (see DS20005678B, page 27)
-      uint32_t idf = inMessage.id ;
-      if (inMessage.ext) {
-        idf = ((inMessage.id >> 18) & 0x7FF) | ((inMessage.id & 0x3FFFF) << 11) ;
-      }
-      writeWordSPI (idf) ;
-  //--- Write DLC, RTR, IDE bits
-    uint32_t data = lengthCodeForLength (inMessage.len) ;
-    if (inMessage.rtr) {
-      data |= 1 << 5 ; // Set RTR bit
+  //--- Write identifier: if an extended frame is sent, identifier bits sould be reordered (see DS20005678B, page 27)
+    uint32_t idf = inMessage.id ;
+    if (inMessage.ext) {
+      idf = ((inMessage.id >> 18) & 0x7FF) | ((inMessage.id & 0x3FFFF) << 11) ;
     }
+    writeWordSPI (idf) ;
+  //--- Write DLC, IDE, BRS bits
+    uint32_t data = lengthCodeForLength (inMessage.len) ;
     if (inMessage.ext) {
       data |= 1 << 4 ; // Set EXT bit
+    }
+    if (mHasDataBitRate) { // BUG FIX in 1.1.4 (thanks to danielhenz)
+      data |= 1 << 6 ; // Set BRS bit
     }
     if (inMessage.len > 8) { // Send a CANFD frame
       data |= 1 << 7 ; // Set FDF bit
@@ -572,8 +572,8 @@ void ACAN2517FD::appendInControllerTxFIFO (const CANFDMessage & inMessage) {
     }
   deassertCS () ;
 //--- Increment FIFO, send message (see DS20005688B, page 48)
-  const uint8_t d = (1 << 0) | (1 << 1) ; // Set UINC bit, TXREQ bit
-  writeByteRegisterSPI (C1FIFOCON_REGISTER (2) + 1, d);
+  const uint8_t data8 = (1 << 0) | (1 << 1) ; // Set UINC bit, TXREQ bit
+  writeByteRegisterSPI (C1FIFOCON_REGISTER (2) + 1, data8);
 }
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
@@ -591,16 +591,16 @@ bool ACAN2517FD::sendViaTXQ (const CANFDMessage & inMessage) {
         idf = ((inMessage.id >> 18) & 0x7FF) | ((inMessage.id & 0x3FFFF) << 11) ;
       }
       writeWordSPI (idf) ;
-    //--- Write DLC, RTR, IDE bits
+    //--- Write DLC, IDE, BRS bits
       uint32_t data = lengthCodeForLength (inMessage.len) ;
-      if (inMessage.rtr) {
-        data |= 1 << 5 ; // Set RTR bit
-      }
       if (inMessage.ext) {
         data |= 1 << 4 ; // Set EXT bit
       }
       if (mHasDataBitRate) {
         data |= 1 << 6 ; // Set BRS bit
+      }
+      if (inMessage.len > 8) { // Send a CANFD frame
+        data |= 1 << 7 ; // Set FDF bit
       }
       writeWordSPI (data) ;
     //--- Write data (Swap data if processor is big endian)
@@ -610,8 +610,8 @@ bool ACAN2517FD::sendViaTXQ (const CANFDMessage & inMessage) {
       }
     deassertCS () ;
   //--- Increment FIFO, send message (see DS20005688B, page 48)
-    const uint8_t d = (1 << 0) | (1 << 1) ; // Set UINC bit, TXREQ bit
-    writeByteRegisterSPI (C1TXQCON_REGISTER + 1, d);
+    const uint8_t data8 = (1 << 0) | (1 << 1) ; // Set UINC bit, TXREQ bit
+    writeByteRegisterSPI (C1TXQCON_REGISTER + 1, data8);
   }
   return TXQNotFull ;
 }
@@ -754,8 +754,8 @@ void ACAN2517FD::transmitInterrupt (void) {
   appendInControllerTxFIFO (message) ;
 //--- If driver transmit buffer is empty, disable "FIFO not full" interrupt
   if (mDriverTransmitBuffer.count () == 0) {
-    const uint8_t d = 1 << 7 ;  // FIFO is a transmit FIFO
-    writeByteRegisterSPI (C1FIFOCON_REGISTER (2), d) ;
+    const uint8_t data8 = 1 << 7 ;  // FIFO is a transmit FIFO
+    writeByteRegisterSPI (C1FIFOCON_REGISTER (2), data8) ;
     mControllerTxFIFOFull = false ;
   }
 }
@@ -791,8 +791,8 @@ void ACAN2517FD::receiveInterrupt (void) {
 //--- Append message to driver receive FIFO
   mDriverReceiveBuffer.append (message) ;
 //--- Increment FIFO
-  const uint8_t d = 1 << 0 ; // Set UINC bit (DS20005688B, page 52)
-  writeByteRegisterSPI (C1FIFOCON_REGISTER (receiveFIFOIndex) + 1, d) ;
+  const uint8_t data8 = 1 << 0 ; // Set UINC bit (DS20005688B, page 52)
+  writeByteRegisterSPI (C1FIFOCON_REGISTER (receiveFIFOIndex) + 1, data8) ;
 //--- If driver receive FIFO is full, disable "FIFO not empty" interrupt
   if (mDriverReceiveBuffer.count () == mDriverReceiveBuffer.size ()) {
     writeByteRegisterSPI (C1FIFOCON_REGISTER (receiveFIFOIndex), 0) ;

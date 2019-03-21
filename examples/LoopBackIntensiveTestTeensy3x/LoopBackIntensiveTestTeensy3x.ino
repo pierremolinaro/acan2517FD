@@ -106,9 +106,10 @@ void setup () {
 
 //——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-static uint32_t gBlinkLedDate = 0 ;
+static uint32_t gBlinkLedDate = 2000 ;
 static uint32_t gFrameCount = 0 ;
 static uint32_t gDebit = 0 ;
+static uint32_t gDebitMax = 0 ;
 static CANFDMessage gCurrentFrame ;
 static bool gWaitingForReception = false ;
 
@@ -118,10 +119,15 @@ void loop () {
   if (gBlinkLedDate < millis ()) {
     gBlinkLedDate += 2000 ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
+    if (gDebitMax < gDebit) {
+      gDebitMax = gDebit ;
+    }
     Serial.print ("Sent: ") ;
     Serial.print (gFrameCount) ;
     Serial.print (", ") ;
-    Serial.print (gDebit / 2) ;
+    Serial.print (gDebit) ;
+    Serial.print (" bytes/s, max ") ;
+    Serial.print (gDebitMax) ;
     Serial.println (" bytes/s") ;
     gDebit = 0 ;
   }
@@ -134,16 +140,11 @@ void loop () {
     }else{
       gCurrentFrame.id &= 0x7FF ;
     }
-    gCurrentFrame.rtr = (random () & 1) == 0 ;
-    if (gCurrentFrame.rtr) { // Remote frame
-      gCurrentFrame.len = (uint8_t) (((uint32_t) random ()) % 8) ;
-    }else{ // Data frame
-      gCurrentFrame.len = (uint8_t) (((uint32_t) random ()) % 65) ;
-      for (uint8_t i=0 ; i<gCurrentFrame.len ; i++) {
-        gCurrentFrame.data [i] = (uint8_t) random () ;
-      }
-      gCurrentFrame.pad () ;
+    gCurrentFrame.len = (uint8_t) (((uint32_t) random ()) % 65) ;
+    for (uint8_t i=0 ; i<gCurrentFrame.len ; i++) {
+      gCurrentFrame.data [i] = (uint8_t) random () ;
     }
+    gCurrentFrame.pad () ;
     gDebit += gCurrentFrame.len ;
     const bool ok = can.tryToSend (gCurrentFrame) ;
     if (ok) {
@@ -159,9 +160,6 @@ void loop () {
     CANFDMessage frame ;
     can.receive (frame) ;
   //--- Check receive frame is identical to sent frame
-    if (frame.rtr != gCurrentFrame.rtr) {
-      Serial.println ("ext error") ;
-    }
     if (frame.ext != gCurrentFrame.ext) {
       Serial.println ("ext error") ;
     }
@@ -170,7 +168,7 @@ void loop () {
     }
     if (frame.len != gCurrentFrame.len) {
       Serial.println ("length error") ;
-    }else if (!frame.rtr) {
+    }else{
       bool ok = true ;
       for (uint8_t i=0 ; (i<frame.len) && ok ; i++) {
         ok = frame.data [i] == gCurrentFrame.data [i] ;

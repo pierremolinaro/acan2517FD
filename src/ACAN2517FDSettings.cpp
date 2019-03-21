@@ -58,7 +58,7 @@ mDataBitRateFactor (inDataBitRateFactor) {
     while ((TQCount <= (MAX_ARBITRATION_PHASE_SEGMENT_1 + MAX_ARBITRATION_PHASE_SEGMENT_2 + 1)) && (BRP > 0)) {
     //--- Compute error using TQCount
       if ((TQCount >= 4) && (TQCount <= maxTQCount)) {
-        const uint32_t error = mSysClock - inDesiredArbitrationBitRate * TQCount * BRP ; // error is allways >= 0
+        const uint32_t error = mSysClock - inDesiredArbitrationBitRate * TQCount * BRP ; // error is always >= 0
         if (error <= smallestError) {
           smallestError = error ;
           bestBRP = BRP ;
@@ -67,7 +67,7 @@ mDataBitRateFactor (inDataBitRateFactor) {
       }
     //--- Compute error using TQCount+1
       if ((TQCount >= 3) && (TQCount < maxTQCount)) {
-        const uint32_t error = inDesiredArbitrationBitRate * (TQCount + 1) * BRP - mSysClock ; // error is allways >= 0
+        const uint32_t error = inDesiredArbitrationBitRate * (TQCount + 1) * BRP - mSysClock ; // error is always >= 0
         if (error <= smallestError) {
           smallestError = error ;
           bestBRP = BRP ;
@@ -95,7 +95,7 @@ mDataBitRateFactor (inDataBitRateFactor) {
     mBitRatePrescaler = (uint16_t) bestBRP ;
     mArbitrationPhaseSegment1 = (uint16_t) PS1 ;
     mArbitrationPhaseSegment2 = (uint8_t) PS2 ;
-    mArbitrationSJW = mArbitrationPhaseSegment2 ; // Allways 1 <= SJW <= 128, and SJW <= mArbitrationPhaseSegment2
+    mArbitrationSJW = mArbitrationPhaseSegment2 ; // Always 1 <= SJW <= 128, and SJW <= mArbitrationPhaseSegment2
   //--- Final check of the nominal configuration
     const uint32_t W = bestTQCount * mDesiredArbitrationBitRate * bestBRP ;
     const uint64_t diff = (mSysClock > W) ? (mSysClock - W) : (W - mSysClock) ;
@@ -113,7 +113,7 @@ mDataBitRateFactor (inDataBitRateFactor) {
     while ((dataTQCount <= maxDataTQCount) && (brp > 0)) {
     //--- Compute error using brp
       if (brp <= MAX_BRP) {
-        const uint32_t error = mSysClock - desiredDataBitRate * dataTQCount * brp ; // error is allways >= 0
+        const uint32_t error = mSysClock - desiredDataBitRate * dataTQCount * brp ; // error is always >= 0
         if (error <= smallestError) {
           smallestError = error ;
           bestBRP = brp ;
@@ -122,7 +122,7 @@ mDataBitRateFactor (inDataBitRateFactor) {
       }
     //--- Compute error using brp+1
       if (brp < MAX_BRP) {
-        const uint32_t error = desiredDataBitRate * dataTQCount * (brp + 1) - mSysClock ; // error is allways >= 0
+        const uint32_t error = desiredDataBitRate * dataTQCount * (brp + 1) - mSysClock ; // error is always >= 0
         if (error <= smallestError) {
           smallestError = error ;
           bestBRP = brp + 1 ;
@@ -164,7 +164,7 @@ mDataBitRateFactor (inDataBitRateFactor) {
     mBitRatePrescaler = (uint16_t) bestBRP ;
     mArbitrationPhaseSegment1 = (uint16_t) arbitrationPS1 ;
     mArbitrationPhaseSegment2 = (uint8_t) arbitrationPS2 ;
-    mArbitrationSJW = mArbitrationPhaseSegment2 ; // Allways 1 <= SJW <= 128, and SJW <= mArbitrationPhaseSegment2
+    mArbitrationSJW = mArbitrationPhaseSegment2 ; // Always 1 <= SJW <= 128, and SJW <= mArbitrationPhaseSegment2
   //--- Final check of the nominal configuration
     const uint32_t W = arbitrationTQCount * mDesiredArbitrationBitRate * bestBRP ;
     const uint64_t diff = (mSysClock > W) ? (mSysClock - W) : (W - mSysClock) ;
