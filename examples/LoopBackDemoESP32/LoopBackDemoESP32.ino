@@ -28,12 +28,12 @@
 // See https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
 //——————————————————————————————————————————————————————————————————————————————
 
-static const byte MCP2517_SCK  = 26 ; // SCK input of MCP2517
-static const byte MCP2517_MOSI = 19 ; // SDI input of MCP2517
-static const byte MCP2517_MISO = 18 ; // SDO output of MCP2517
+static const byte MCP2517_SCK  = 26 ; // SCK input of MCP2517FD
+static const byte MCP2517_MOSI = 19 ; // SDI input of MCP2517FD
+static const byte MCP2517_MISO = 18 ; // SDO output of MCP2517FD
 
-static const byte MCP2517_CS  = 16 ; // CS input of MCP2517
-static const byte MCP2517_INT = 32 ; // INT output of MCP2517
+static const byte MCP2517_CS  = 16 ; // CS input of MCP2517FD
+static const byte MCP2517_INT = 32 ; // INT output of MCP2517FD
 
 //——————————————————————————————————————————————————————————————————————————————
 //  ACAN2517FD Driver object
