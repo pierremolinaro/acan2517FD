@@ -235,7 +235,9 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   }
 //----------------------------------- CS pin
   if (errorCode == 0) {
-    pinMode (mINT, INPUT_PULLUP) ;
+    if (mINT != 255) { // 255 means interrupt is not used
+      pinMode (mINT, INPUT_PULLUP) ;
+    }
     deassertCS () ;
     pinMode (mCS, OUTPUT) ;
   //----------------------------------- Set SPI clock to 1 MHz
