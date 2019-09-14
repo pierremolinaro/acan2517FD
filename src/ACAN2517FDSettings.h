@@ -36,7 +36,8 @@ class ACAN2517FDSettings {
     CLKO_DIVIDED_BY_1,
     CLKO_DIVIDED_BY_2,
     CLKO_DIVIDED_BY_4,
-    CLKO_DIVIDED_BY_10, SOF
+    CLKO_DIVIDED_BY_10,
+    SOF
   } CLKOpin ;
 
   public: typedef enum : uint8_t {
@@ -87,8 +88,7 @@ class ACAN2517FDSettings {
   private: uint32_t mSysClock ; // In Hz
   public: const uint32_t mDesiredArbitrationBitRate ; // In kb/s
   public: const DataBitRateFactor mDataBitRateFactor ;
-//--- Data bit rate; if mDataBitRateFactor==1, theses properties are set to their corresponding values,
-//    and are not used for configuring the MCP2517FD.
+//--- Data bit rate; if mDataBitRateFactor==1, theses properties are not used for configuring the MCP2517FD.
   public: uint8_t mDataPhaseSegment1 = 0 ; // if mDataBitRateFactor > 1: 2...32, else equal to mArbitrationPhaseSegment1
   public: uint8_t mDataPhaseSegment2 = 0 ; // if mDataBitRateFactor > 1: 1...16, else equal to mArbitrationPhaseSegment2
   public: uint8_t mDataSJW = 0 ; // if mDataBitRateFactor > 1: 1...16, else equal to mArbitrationSJW
@@ -99,6 +99,8 @@ class ACAN2517FDSettings {
   public: uint8_t mArbitrationPhaseSegment2 = 0 ; // 1...128
   public: uint8_t mArbitrationSJW = 0 ; // 1...128
   public: bool mArbitrationBitRateClosedToDesiredRate = false ; // The above configuration is not correct
+//--- Transmitter Delay Compensation Offset
+  public: int8_t mTDCO = 0 ; // -64 ... +63
 
 //······················································································································
 //    MCP2517FD TXCAN pin is Open Drain ?
@@ -140,7 +142,7 @@ class ACAN2517FDSettings {
   public: uint16_t mDriverTransmitFIFOSize = 16 ; // >= 0
 
 //--- Controller transmit FIFO size
-  public: uint8_t mControllerTransmitFIFOSize = 4 ; // 1 ... 32
+  public: uint8_t mControllerTransmitFIFOSize = 1 ; // 1 ... 32
 
 //--- Payload controller transmit FIFO size
   public: PayloadSize mControllerTransmitFIFOPayload = PAYLOAD_64 ;
@@ -179,7 +181,7 @@ class ACAN2517FDSettings {
   public: PayloadSize mControllerReceiveFIFOPayload = PAYLOAD_64 ;
 
 //--- Controller receive FIFO size
-  public: uint8_t mControllerReceiveFIFOSize = 24 ; // 1 ... 32
+  public: uint8_t mControllerReceiveFIFOSize = 27 ; // 1 ... 32
 
 //······················································································································
 //    SYSCLOCK frequency computation

@@ -61,12 +61,11 @@ class ACAN2517FD {
   public: static const uint32_t kX10PLLNotReadyWithin1MS            = ((uint32_t) 1) << 17 ;
   public: static const uint32_t kReadBackErrorWithFullSpeedSPIClock = ((uint32_t) 1) << 18 ;
   public: static const uint32_t kISRNotNullAndNoIntPin              = ((uint32_t) 1) << 19 ;
+  public: static const uint32_t kInvalidTDCO                        = ((uint32_t) 1) << 20 ;
 
 //······················································································································
 //   Send a message
 //······················································································································
-
-  public: bool tryToSend (const CANMessage & inMessage) ;
 
   public: bool tryToSend (const CANFDMessage & inMessage) ;
 
@@ -86,7 +85,30 @@ class ACAN2517FD {
 //    Get error counters
 //······················································································································
 
-  public: uint32_t readErrorCounters (void) ;
+  public: uint32_t errorCounters (void) ;
+
+//······················································································································
+//    Current MCP2517FD Operation Mode
+//······················································································································
+
+  public: typedef enum : uint8_t {
+    NormalFD = 0,
+    Sleep = 1,
+    InternalLoopBack = 2,
+    ListenOnly = 3,
+    Configuration = 4,
+    ExternalLoopBack = 5,
+    Normal20B = 6,
+    RestrictedOperation = 7
+  } OperationMode ;
+
+  public: OperationMode currentOperationMode (void) ;
+
+//······················································································································
+//    Recovery from Restricted Operation Mode
+//······················································································································
+
+  public: bool recoverFromRestrictedOperationMode (void) ;
 
 //······················································································································
 //    Private properties
@@ -97,17 +119,23 @@ class ACAN2517FD {
   private: uint8_t mCS ;
   private: uint8_t mINT ;
   private: bool mUsesTXQ ;
-  private: bool mControllerTxFIFOFull ;
+  private: bool mHardwareTxFIFOFull ;
   private: bool mHasDataBitRate ;
   private: uint8_t mTransmitFIFOPayload ; // in byte count
   private: uint8_t mTXQBufferPayload ; // in byte count
   private: uint8_t mReceiveFIFOPayload ; // in byte count
+  private: uint8_t mTXBWS_RequestedMode ;
+  private: uint8_t mHardwareReceiveBufferOverflowCount ;
 
 //······················································································································
 //    Receive buffer
 //······················································································································
 
   private: ACANFDBuffer mDriverReceiveBuffer ;
+
+  public: uint32_t driverReceiveBufferPeakCount (void) const { return mDriverReceiveBuffer.peakCount () ; }
+
+  public: uint8_t hardwareReceiveBufferOverflowCount (void) const { return mHardwareReceiveBufferOverflowCount ; }
 
 //······················································································································
 //    Transmit buffer
@@ -125,23 +153,28 @@ class ACAN2517FD {
 //    Private methods
 //······················································································································
 
-  private: void readCommandSPI (const uint16_t inRegisterAddress) ;
-  private: void writeCommandSPI (const uint16_t inRegisterAddress) ;
-  private: uint32_t readWordSPI (void) ;
-  private: void writeWordSPI (const uint32_t inValue) ;
+  private: void readCommandAssumeCS_SPI_transaction (const uint16_t inRegisterAddress) ;
+  private: void writeCommandAssumeCS_SPI_transaction (const uint16_t inRegisterAddress) ;
+  private: uint32_t read32AssumeCS_SPI_transaction (void) ;
+  private: void write32AssumeCS_SPI_transaction (const uint32_t inValue) ;
 
-  private: void writeRegisterSPI (const uint16_t inRegisterAddress, const uint32_t inValue) ;
-  private: uint32_t readRegisterSPI (const uint16_t inRegisterAddress) ;
-  private: void writeByteRegisterSPI (const uint16_t inRegisterAddress, const uint8_t inValue) ;
-  private: uint8_t readByteRegisterSPI (const uint16_t inRegisterAddress) ;
+  private: void writeRegister32Assume_SPI_transaction (const uint16_t inRegisterAddress, const uint32_t inValue) ;
+  private: void writeRegister8Assume_SPI_transaction (const uint16_t inRegisterAddress, const uint8_t inValue) ;
+
+  private: uint32_t readRegister32Assume_SPI_transaction (const uint16_t inRegisterAddress) ;
+  private: uint8_t readRegister8Assume_SPI_transaction (const uint16_t inRegisterAddress) ;
+  private: uint16_t readRegister16Assume_SPI_transaction (const uint16_t inRegisterAddress) ;
   private: void assertCS (void) ;
   private: void deassertCS (void) ;
 
   private: void reset2517FD (void) ;
-  private: void writeRegister (const uint16_t inAddress, const uint32_t inValue) ;
-  private: uint32_t readRegister (const uint16_t inAddress) ;
-  private: void writeByteRegister (const uint16_t inRegisterAddress, const uint8_t inValue) ;
-  private: uint8_t readByteRegister (const uint16_t inAddress) ;
+
+  private: void writeRegister8 (const uint16_t inRegisterAddress, const uint8_t inValue) ;
+  private: void writeRegister32 (const uint16_t inAddress, const uint32_t inValue) ;
+
+  private: uint8_t readRegister8 (const uint16_t inAddress) ;
+  private: uint16_t readRegister16 (const uint16_t inAddress) ;
+  private: uint32_t readRegister32 (const uint16_t inAddress) ;
 
   private: bool sendViaTXQ (const CANFDMessage & inMessage) ;
   private: bool enterInTransmitBuffer (const CANFDMessage & inMessage) ;

@@ -64,7 +64,7 @@ void setup () {
   SPI1.begin () ;
 //--- Configure ACAN2517FD
   Serial.println ("Configure ACAN2517FD") ;
-  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 1000 * 1000, ACAN2517FDSettings::DATA_BITRATE_x8) ;
+  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000, ACAN2517FDSettings::DATA_BITRATE_x1) ;
   settings.mRequestedMode = ACAN2517FDSettings::InternalLoopBack ; // Select loopback mode
 //--- RAM Usage
   Serial.print ("MCP2517FD RAM Usage: ") ;

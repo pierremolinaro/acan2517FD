@@ -8,6 +8,10 @@
 #include <ACAN2517FDSettings.h>
 
 //----------------------------------------------------------------------------------------------------------------------
+
+#pragma GCC diagnostic error "-Wswitch-enum"
+
+//----------------------------------------------------------------------------------------------------------------------
 //    sysClock
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -15,10 +19,10 @@ uint32_t ACAN2517FDSettings::sysClock (const Oscillator inOscillator) {
   uint32_t sysClock = 40UL * 1000 * 1000 ;
   switch (inOscillator) {
   case OSC_4MHz:
-    sysClock =  4UL * 1000 * 1000 ;
+    sysClock = 4UL * 1000 * 1000 ;
     break ;
   case OSC_4MHz_DIVIDED_BY_2:
-    sysClock =  2UL * 1000 * 1000 ;
+    sysClock = 2UL * 1000 * 1000 ;
     break ;
   case OSC_4MHz10xPLL_DIVIDED_BY_2 :
   case OSC_40MHz_DIVIDED_BY_2:
@@ -145,6 +149,8 @@ mDataBitRateFactor (inDataBitRateFactor) {
       dataPS1 = MAX_DATA_PHASE_SEGMENT_1 ;
     }
   //---
+    const int TDCO = bestBRP * dataPS1 ; // According to DS20005678D, §3.4.8 Page 20
+    mTDCO = (TDCO > 63) ? 63 : (int8_t) TDCO ;
     mDataPhaseSegment1 = (uint8_t) dataPS1 ;
     mDataPhaseSegment2 = (uint8_t) dataPS2 ;
     mDataSJW = mDataPhaseSegment2 ;
