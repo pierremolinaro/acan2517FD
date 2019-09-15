@@ -1,4 +1,4 @@
-## MCP2517FD CAN Controller Library for Arduino (in CAN FD mode)
+## MCP2517FD and MCP2518FD CAN Controller Library for Arduino (in CAN FD mode)
 
 
 ### Compatibility with the other ACAN libraries
@@ -6,9 +6,9 @@
 This library is fully compatible with the Teensy 3.x ACAN library [https://github.com/pierremolinaro/acan](), ACAN2515 library [https://github.com/pierremolinaro/acan2515](), and the ACAN2517 library [https://github.com/pierremolinaro/acan2517](), it uses a very similar API.
 
 ### ACAN2517FD library description
-ACAN2517FD is a driver for the MCP2517FD CAN Controller, in CAN FD mode. It runs on any Arduino compatible board.
+ACAN2517FD is a driver for the MCP2517FD and MCP2518FD CAN Controllers, in CAN FD mode. It runs on any Arduino compatible board.
 
-> The ACAN2517 library handles the MCP2517FD CAN Controller, in CAN 2.0B mode.
+> The ACAN2517 library handles the MCP2517FD and MCP2518FD CAN Controller, in CAN 2.0B mode.
 
 
 The library supports the 4MHz, 20 MHz and 40 MHz oscillator clock.
