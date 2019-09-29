@@ -39,9 +39,9 @@ void setup () {
   while (!Serial) {}
   Serial.println ("Hello") ;
  // Arbitration bit rate: 125 kbit/s, data bit rate: 500 kbit/s
-  ACAN2517FDSettings settings (ACAN2517Settings::OSC_4MHz10xPLL,
-                               125 * 1000, ACAN2517Settings::DATA_BITRATE_x4) ;
-  settings.mRequestedMode = ACAN2517RequestedMode::InternalLoopBackMode ; // Select loopback mode
+  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL,
+                               125 * 1000, ACAN2517FDSettings::DATA_BITRATE_x4) ;
+  settings.mRequestedMode = ACAN2517FDSettings::InternalLoopBack ; // Select loopback mode
   const uint32_t errorCode = can.begin (settings, [] { can.isr () ; }) ;
   if (0 == errorCode) {
     Serial.println ("Can ok") ;
@@ -93,9 +93,9 @@ The MCP2517 CAN Controller implements 32 acceptance masks and 32 acceptance filt
 For example (`LoopBackDemoTeensy3xWithFilters` sketch):
 
 ```cpp
-  ACAN2517Settings settings (ACAN2517Settings::OSC_4MHz10xPLL, 125 * 1000) ;
-  settings.mRequestedMode = ACAN2517 RequestedMode::LoopBackMode ; // Select loopback mode
-  MCP2517Filters filters ;
+  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000) ;
+  settings.mRequestedMode = ACAN2517FDSettings::InternalLoopBack ; // Select loopback mode
+  ACAN2517Filters filters ;
 // Filter #0: receive standard frame with identifier 0x123
   filters.appendFrameFilter (kStandard, 0x123, receiveFromFilter0) ;
 // Filter #1: receive extended frame with identifier 0x12345678
