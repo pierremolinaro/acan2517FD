@@ -476,7 +476,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
       #ifdef ARDUINO_ARCH_ESP32
         attachInterrupt (itPin, inInterruptServiceRoutine, FALLING) ;
       #else
-        attachInterrupt (itPin, inInterruptServiceRoutine, LOW) ;
+        attachInterrupt (itPin, inInterruptServiceRoutine, LOW) ; // Thank to Flole998
      //   mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
       #endif
     }
@@ -1053,25 +1053,6 @@ uint32_t ACAN2517FD::readRegister32 (const uint16_t inRegisterAddress) {
   return result ;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
-uint32_t ACAN2517FD::errorCounters (void) {
-  mSPI.beginTransaction (mSPISettings) ;
-    #ifdef ARDUINO_ARCH_ESP32
-      taskDISABLE_INTERRUPTS () ;
-    #else
-      noInterrupts () ;
-    #endif
-      const uint32_t result = readRegister32Assume_SPI_transaction (TREC_REGISTER) ;
-    #ifdef ARDUINO_ARCH_ESP32
-      taskENABLE_INTERRUPTS () ;
-    #else
-      interrupts () ;
-    #endif
-  mSPI.endTransaction () ;
-  return result ;
-}
-
 //······················································································································
 //    Current MCP2517FD Operation Mode
 //······················································································································
@@ -1123,6 +1104,12 @@ void ACAN2517FD::reset2517FD (void) {
       interrupts () ;
     #endif
   mSPI.endTransaction () ;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+uint32_t ACAN2517FD::errorCounters (void) {
+  return readRegister32 (TREC_REGISTER) ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
