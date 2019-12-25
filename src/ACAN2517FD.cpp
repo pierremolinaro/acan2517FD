@@ -477,7 +477,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
         attachInterrupt (itPin, inInterruptServiceRoutine, FALLING) ;
       #else
         attachInterrupt (itPin, inInterruptServiceRoutine, LOW) ; // Thank to Flole998
-     //   mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
+        mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
       #endif
     }
   }
