@@ -307,7 +307,6 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
       osc |= ((uint8_t) inSettings.mCLKOPin) << 5 ;
     }
     writeRegister8 (OSC_REGISTER, osc) ; // DS20005688B, page 16
-    Serial.print ("OSC ") ; Serial.println (osc, HEX) ;
   //--- Wait for PLL is ready (wait max 2 ms)
     if (pll != 0) {
       bool wait = true ;
@@ -442,7 +441,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   //  bits 11-8: TSEG2 - 1
   //  bits 7-4: unused
   //  bits 3-0: SJW - 1
-    mHasDataBitRate = inSettings.mDataBitRateFactor != 1 ;
+    mHasDataBitRate = inSettings.mDataBitRateFactor != ::DataBitRateFactor::x1 ;
     if (mHasDataBitRate) {
       data = inSettings.mBitRatePrescaler - 1 ;
       data <<= 8 ;
@@ -477,7 +476,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
         attachInterrupt (itPin, inInterruptServiceRoutine, FALLING) ;
       #else
         attachInterrupt (itPin, inInterruptServiceRoutine, LOW) ; // Thank to Flole998
-     //   mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
+        mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
       #endif
     }
   }

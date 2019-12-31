@@ -51,7 +51,7 @@ mOscillator (inOscillator),
 mSysClock (sysClock (inOscillator)),
 mDesiredArbitrationBitRate (inDesiredArbitrationBitRate),
 mDataBitRateFactor (inDataBitRateFactor) {
-  if (inDataBitRateFactor == 1) { // Single bit rate
+  if (inDataBitRateFactor == DataBitRateFactor::x1) { // Single bit rate
     const uint32_t maxTQCount = MAX_ARBITRATION_PHASE_SEGMENT_1 + MAX_ARBITRATION_PHASE_SEGMENT_2 + 1 ; // Setting for slowest bit rate
     uint32_t BRP = MAX_BRP ;
     uint32_t smallestError = UINT32_MAX ;
@@ -107,7 +107,7 @@ mDataBitRateFactor (inDataBitRateFactor) {
     mArbitrationBitRateClosedToDesiredRate = (diff * ppm) <= (((uint64_t) W) * inTolerancePPM) ;
   }else{ // Dual bit rate, first compute data bit rate
     const uint32_t maxDataTQCount = MAX_DATA_PHASE_SEGMENT_1 + MAX_DATA_PHASE_SEGMENT_2 ; // Setting for slowest bit rate
-    const uint32_t desiredDataBitRate = inDesiredArbitrationBitRate * inDataBitRateFactor ;
+    const uint32_t desiredDataBitRate = inDesiredArbitrationBitRate * uint8_t (inDataBitRateFactor) ;
     uint32_t smallestError = UINT32_MAX ;
     uint32_t bestBRP = MAX_BRP ; // Setting for lowest bit rate
     uint32_t bestDataTQCount = maxDataTQCount ; // Setting for lowest bit rate
@@ -154,7 +154,7 @@ mDataBitRateFactor (inDataBitRateFactor) {
     mDataPhaseSegment1 = (uint8_t) dataPS1 ;
     mDataPhaseSegment2 = (uint8_t) dataPS2 ;
     mDataSJW = mDataPhaseSegment2 ;
-    const uint32_t arbitrationTQCount = bestDataTQCount * mDataBitRateFactor ;
+    const uint32_t arbitrationTQCount = bestDataTQCount * uint8_t (mDataBitRateFactor) ;
   //--- Compute arbiration PS2 (1 <= PS2 <= 128)
     uint32_t arbitrationPS2 = arbitrationTQCount / 5 ; // For sampling point at 80%
     if (arbitrationPS2 == 0) {
@@ -191,7 +191,7 @@ uint32_t ACAN2517FDSettings::actualArbitrationBitRate (void) const {
 //----------------------------------------------------------------------------------------------------------------------
 
 uint32_t ACAN2517FDSettings::actualDataBitRate (void) const {
-  if (mDataBitRateFactor == 1) {
+  if (mDataBitRateFactor == DataBitRateFactor::x1) {
     return actualArbitrationBitRate () ;
   }else{
     const uint32_t dataTQCount = 1 /* Sync Seg */ + mDataPhaseSegment1 + mDataPhaseSegment2 ;
@@ -209,22 +209,22 @@ bool ACAN2517FDSettings::exactArbitrationBitRate (void) const {
 //----------------------------------------------------------------------------------------------------------------------
 
 bool ACAN2517FDSettings::exactDataBitRate (void) const {
-  if (mDataBitRateFactor == 1) {
+  if (mDataBitRateFactor == DataBitRateFactor::x1) {
     return exactArbitrationBitRate () ;
   }else{
     const uint32_t TQCount = 1 /* Sync Seg */ + mDataPhaseSegment1 + mDataPhaseSegment2 ;
-    return mSysClock == (mBitRatePrescaler * mDesiredArbitrationBitRate * TQCount * mDataBitRateFactor) ;
+    return mSysClock == (mBitRatePrescaler * mDesiredArbitrationBitRate * TQCount * uint8_t (mDataBitRateFactor)) ;
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 bool ACAN2517FDSettings::dataBitRateIsAMultipleOfArbitrationBitRate (void) const {
-  bool result = mDataBitRateFactor == 1 ;
+  bool result = mDataBitRateFactor == DataBitRateFactor::x1 ;
   if (!result) {
     const uint32_t dataTQCount = 1 /* Sync Seg */ + mDataPhaseSegment1 + mDataPhaseSegment2 ;
     const uint32_t arbitrationTQCount = 1 /* Sync Seg */ + mArbitrationPhaseSegment1 + mArbitrationPhaseSegment2 ;
-    result = arbitrationTQCount == (dataTQCount * mDataBitRateFactor) ;
+    result = arbitrationTQCount == (dataTQCount * uint8_t (mDataBitRateFactor)) ;
   }
   return result ;
 }
@@ -292,7 +292,7 @@ uint32_t ACAN2517FDSettings::CANBitSettingConsistency (void) const {
     errorCode |= kArbitrationSJWIsGreaterThanPhaseSegment2 ;
   }
 //--- Data bit rate ?
-  if (mDataBitRateFactor != 1) {
+  if (mDataBitRateFactor != DataBitRateFactor::x1) {
     if (! dataBitRateIsAMultipleOfArbitrationBitRate ()) {
       errorCode |= kArbitrationTQCountNotDivisibleByDataBitRateFactor ;
     }

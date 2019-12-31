@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#include <stdint.h>
+#include "ACANFD_DataBitRateFactor.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 //  ACAN2517FDSettings class
@@ -60,16 +60,20 @@ class ACAN2517FDSettings {
     PAYLOAD_64 = 7
   } PayloadSize ;
 
-  public: typedef enum : uint8_t {
-    DATA_BITRATE_x1 = 1,
-    DATA_BITRATE_x2 = 2,
-    DATA_BITRATE_x3 = 3,
-    DATA_BITRATE_x4 = 4,
-    DATA_BITRATE_x5 = 5,
-    DATA_BITRATE_x6 = 6,
-    DATA_BITRATE_x7 = 7,
-    DATA_BITRATE_x8 = 8
-  } DataBitRateFactor ;
+//······················································································································
+//   Depercated enumeration (now use DataBitRateFactor declared in ACANFD_DataBitRateFactor.h
+//······················································································································
+
+  public : typedef enum : uint8_t {
+      DATA_BITRATE_x1 = 1,
+      DATA_BITRATE_x2 = 2,
+      DATA_BITRATE_x3 = 3,
+      DATA_BITRATE_x4 = 4,
+      DATA_BITRATE_x5 = 5,
+      DATA_BITRATE_x6 = 6,
+      DATA_BITRATE_x7 = 7,
+      DATA_BITRATE_x8 = 8
+  } DataBitRateFactor_Deprecated ;
 
 //······················································································································
 //   CONSTRUCTOR
@@ -79,6 +83,17 @@ class ACAN2517FDSettings {
                               const uint32_t inDesiredArbitrationBitRate,
                               const DataBitRateFactor inDataBitRateFactor,
                               const uint32_t inTolerancePPM = 1000) ;
+
+//······················································································································
+//   DEPRECATED CONSTRUCTOR (for compatibility with version < 2.1.0)
+//······················································································································
+
+  public: ACAN2517FDSettings (const Oscillator inOscillator,
+                              const uint32_t inDesiredArbitrationBitRate,
+                              const DataBitRateFactor_Deprecated inDataBitRateFactor,
+                              const uint32_t inTolerancePPM = 1000) :
+  ACAN2517FDSettings (inOscillator, inDesiredArbitrationBitRate, DataBitRateFactor (inDataBitRateFactor), inTolerancePPM) {
+  }
 
 //······················································································································
 //   CAN BIT TIMING

@@ -42,7 +42,10 @@ void setup () {
 //----------------------------------- Begin SPI1
   SPI1.begin () ;
 //--- Configure ACAN2517FD
-  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_40MHz, 1000 * 1000, ACAN2517FDSettings::DATA_BITRATE_x8) ;
+//--- For version >= 2.1.0
+  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 1000 * 1000, DataBitRateFactor::x8) ;
+//--- For version < 2.1.0
+//  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 1000 * 1000, ACAN2517FDSettings::DATA_BITRATE_x8) ;
   settings.mDriverReceiveFIFOSize = 200 ;
 //--- Begin
   const uint32_t errorCode = can.begin (settings, [] { can.isr () ; }) ;

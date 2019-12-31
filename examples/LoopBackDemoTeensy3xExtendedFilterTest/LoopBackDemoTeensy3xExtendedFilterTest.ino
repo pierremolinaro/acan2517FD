@@ -53,7 +53,10 @@ void setup () {
   SPI1.begin () ;
 //----------------------------------- Configure ACAN2517FD
   Serial.println ("Configure ACAN2517FD") ;
-  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000, ACAN2517FDSettings::DATA_BITRATE_x4) ; // CAN bit rate 125 kb/s
+//--- For version >= 2.1.0
+  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000, DataBitRateFactor::x4) ;
+//--- For version < 2.1.0
+//  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000, ACAN2517FDSettings::DATA_BITRATE_x4) ;
   settings.mRequestedMode = ACAN2517FDSettings::InternalLoopBack; // Select loopback mode
 //----------------------------------- Append filters
   ACAN2517FDFilters filters ;
