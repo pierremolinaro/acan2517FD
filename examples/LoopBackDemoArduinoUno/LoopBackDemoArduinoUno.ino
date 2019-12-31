@@ -35,9 +35,9 @@ void setup () {
   Serial.print (sizeof (ACAN2517FDSettings)) ;
   Serial.println (" bytes") ;
   Serial.println ("Configure ACAN2517FD") ;
-//--- For version >= 2.0.1
+//--- For version >= 2.1.0
   ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125UL * 1000UL, DataBitRateFactor::x1) ;
-//--- For version <= 2.0.0
+//--- For version < 2.1.0
 //  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125UL * 1000UL, ACAN2517FDSettings::DATA_BITRATE_x1) ;
   settings.mRequestedMode = ACAN2517FDSettings::InternalLoopBack ; // Select loopback mode
 //--- Default values are too high for an Arduino Uno that contains 2048 bytes of RAM: reduce them
