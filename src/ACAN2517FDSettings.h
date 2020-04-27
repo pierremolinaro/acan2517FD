@@ -61,7 +61,7 @@ class ACAN2517FDSettings {
   } PayloadSize ;
 
 //······················································································································
-//   Depercated enumeration (now use DataBitRateFactor declared in ACANFD_DataBitRateFactor.h
+//   Deprecated enumeration (now use DataBitRateFactor declared in ACANFD_DataBitRateFactor.h
 //······················································································································
 
   public : typedef enum : uint8_t {

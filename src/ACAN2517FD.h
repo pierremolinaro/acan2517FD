@@ -153,11 +153,6 @@ class ACAN2517FD {
 //    Private methods
 //······················································································································
 
-  private: void readCommandAssumeCS_SPI_transaction (const uint16_t inRegisterAddress) ;
-  private: void writeCommandAssumeCS_SPI_transaction (const uint16_t inRegisterAddress) ;
-  private: uint32_t read32AssumeCS_SPI_transaction (void) ;
-  private: void write32AssumeCS_SPI_transaction (const uint32_t inValue) ;
-
   private: void writeRegister32Assume_SPI_transaction (const uint16_t inRegisterAddress, const uint32_t inValue) ;
   private: void writeRegister8Assume_SPI_transaction (const uint16_t inRegisterAddress, const uint8_t inValue) ;
 
