@@ -409,7 +409,9 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   //----------------------------------- Configure TXQ and TEF
   // Bit 4: Enable Transmit Queue bit ---> 1: Enable TXQ and reserves space in RAM
   // Bit 3: Store in Transmit Event FIFO bit ---> 0: Don’t save transmitted messages in TEF
-    data8 = mUsesTXQ ? (1 << 4) : 0x00 ; // Bug fix in 1.1.4 (thanks to danielhenz)
+  // Bit 0: RTXAT ---> 1: Enable CiFIFOCONm.TXAT to control retransmission attempts
+    data8 = 0x01 ; // Enable RTXAT to limit retransmissions (Flole)
+    data8 |= mUsesTXQ ? (1 << 4) : 0x00 ; // Bug fix in 1.1.4 (thanks to danielhenz)
     writeRegister8 (CON_REGISTER + 2, data8); // DS20005688B, page 24
   //----------------------------------- Configure RX FIFO (FIFOCON, DS20005688B, page 52)
     data8 = inSettings.mControllerReceiveFIFOSize - 1 ; // Set receive FIFO size

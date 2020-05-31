@@ -9,11 +9,11 @@
 //  As hardware SPI is used, you should select pins that support SPI functions.
 //  This sketch is designed for a Teensy 3.5, using SPI1
 //  But standard Teensy 3.5 SPI1 pins are not used
-//    SCK input of MCP2517 is connected to pin #32
-//    SDI input of MCP2517 is connected to pin #0
-//    SDO output of MCP2517 is connected to pin #1
-//  CS input of MCP2517 should be connected to a digital output port
-//  INT output of MCP2517 should be connected to a digital input port, with interrupt capability
+//    SCK input of MCP2517FD is connected to pin #32
+//    SDI input of MCP2517FD is connected to pin #0
+//    SDO output of MCP2517FD is connected to pin #1
+//  CS input of MCP2517FD should be connected to a digital output port
+//  INT output of MCP2517FD should be connected to a digital input port, with interrupt capability
 //——————————————————————————————————————————————————————————————————————————————
 
 static const byte MCP2517_SCK = 32 ; // SCK input of MCP2517
