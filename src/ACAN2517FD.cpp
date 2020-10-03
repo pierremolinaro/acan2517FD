@@ -1167,8 +1167,8 @@ uint32_t ACAN2517FD::errorCounters (void) {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-uint32_t ACAN2517FD::diagInfos(void) {
-    return readRegister32(BDIAG1_REGISTER);
+uint32_t ACAN2517FD::diagInfos (void) { // thanks to Flole998
+  return readRegister32 (BDIAG1_REGISTER) ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
