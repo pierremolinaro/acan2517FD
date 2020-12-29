@@ -511,6 +511,13 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
         mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
       #endif
     }
+
+    /*
+     * If you begin() multiple times without constructor,
+     * mHardwareTxFIFOFull = true will block the transmitter.
+     */
+    mHardwareTxFIFOFull = false;
+    mHardwareReceiveBufferOverflowCount = 0;
   }
 //---
   return errorCode ;
