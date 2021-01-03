@@ -91,7 +91,7 @@ class ACAN2517FD {
 //    Get diagnostic information (thanks to Flole998)
 //······················································································································
 
-  public: uint32_t diagInfos (void) ;
+  public: uint32_t diagInfos (int index = 1) ;
 
 //······················································································································
 //    Current MCP2517FD Operation Mode
