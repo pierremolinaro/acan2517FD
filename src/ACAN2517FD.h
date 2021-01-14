@@ -88,10 +88,12 @@ class ACAN2517FD {
   public: uint32_t errorCounters (void) ;
 
 //······················································································································
-//    Get diagnostic information (thanks to Flole998)
+//    Get diagnostic information (thanks to Flole998 and turnary)
+// inIndex == 0 returns BDIAG0_REGISTER
+// inIndex != 0 returns BDIAG1_REGISTER
 //······················································································································
 
-  public: uint32_t diagInfos (int index = 1) ;
+  public: uint32_t diagInfos (const int inIndex = 1) ;
 
 //······················································································································
 //    Current MCP2517FD Operation Mode

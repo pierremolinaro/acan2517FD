@@ -1174,8 +1174,8 @@ uint32_t ACAN2517FD::errorCounters (void) {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-uint32_t ACAN2517FD::diagInfos (int index) { // thanks to Flole998
-  return readRegister32 (index? BDIAG1_REGISTER: BDIAG0_REGISTER) ;
+uint32_t ACAN2517FD::diagInfos (const int inIndex) { // thanks to Flole998 and turnary
+  return readRegister32 (inIndex ? BDIAG1_REGISTER: BDIAG0_REGISTER) ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
