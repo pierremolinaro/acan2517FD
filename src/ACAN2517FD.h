@@ -88,7 +88,7 @@ class ACAN2517FD {
   public: uint32_t errorCounters (void) ;
 
 //······················································································································
-//    Get diagnostic information (thanks to Flole998 and turnary)
+//    Get diagnostic information (thanks to Flole998 and turmary)
 // inIndex == 0 returns BDIAG0_REGISTER
 // inIndex != 0 returns BDIAG1_REGISTER
 //······················································································································
