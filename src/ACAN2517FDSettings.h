@@ -72,7 +72,9 @@ class ACAN2517FDSettings {
       DATA_BITRATE_x5 = 5,
       DATA_BITRATE_x6 = 6,
       DATA_BITRATE_x7 = 7,
-      DATA_BITRATE_x8 = 8
+      DATA_BITRATE_x8 = 8,
+      DATA_BITRATE_x9 = 9,
+      DATA_BITRATE_x10 = 10
   } DataBitRateFactor_Deprecated ;
 
 //······················································································································
