@@ -3,7 +3,7 @@
 
 ### Compatibility with the other ACAN libraries
 
-This library is fully compatible with the Teensy 3.x ACAN library [https://github.com/pierremolinaro/acan](), ACAN2515 library [https://github.com/pierremolinaro/acan2515](), and the ACAN2517 library [https://github.com/pierremolinaro/acan2517](), it uses a very similar API.
+This library is fully compatible with the Teensy 3.x ACAN library https://github.com/pierremolinaro/acan, ACAN2515 library https://github.com/pierremolinaro/acan2515, and the ACAN2517 library https://github.com/pierremolinaro/acan2517, it uses a very similar API.
 
 ### ACAN2517FD library description
 ACAN2517FD is a driver for the MCP2517FD and MCP2518FD CAN Controllers, in CAN FD mode. It runs on any Arduino compatible board.
