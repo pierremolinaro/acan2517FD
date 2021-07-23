@@ -27,7 +27,7 @@ static const uint8_t TXBWS = 0 ;
 //     in "usual" Arduino;
 //   - as this task runs in parallel with setup / loop routines, SPI access is natively protected by the
 //     beginTransaction / endTransaction pair, that manages a mutex;
-//   - (May 29, 2019) it appears that MCP2717FD wants de CS line to deasserted as soon as possible (thanks for
+//   - (May 29, 2019) it appears that MCP2717FD wants the CS line to deasserted as soon as possible (thanks for
 //     Nick Kirkby for having signaled me this point, see https://github.com/pierremolinaro/acan2517/issues/5);
 //     so we mask interrupts when we access the MCP2517FD, the sequence becomes:
 //           mSPI.beginTransaction (mSPISettings) ;
@@ -52,7 +52,7 @@ static const uint8_t TXBWS = 0 ;
       bool loop = true ;
       while (loop) {
         loop = canDriver->isr_core () ;
-	    }
+      }
     }
   }
 #endif
