@@ -23,7 +23,7 @@ static const uint8_t TXBWS = 0 ;
 //
 // So we handle the ESP32 interrupt in the following way:
 //   - interrupt service routine performs a xSemaphoreGiveFromISR on mISRSemaphore of can driver
-//   - this activates the myESP32Task task that performs "isr_core" that is done by interrupt service routine
+//   - this activates the myESP32Task task that performs "isr_poll_core" that is done by interrupt service routine
 //     in "usual" Arduino;
 //   - as this task runs in parallel with setup / loop routines, SPI access is natively protected by the
 //     beginTransaction / endTransaction pair, that manages a mutex;
@@ -49,10 +49,7 @@ static const uint8_t TXBWS = 0 ;
     ACAN2517FD * canDriver = (ACAN2517FD *) pData ;
     while (1) {
       xSemaphoreTake (canDriver->mISRSemaphore, portMAX_DELAY) ;
-      bool loop = true ;
-      while (loop) {
-        loop = canDriver->isr_core () ;
-      }
+      canDriver->isr_poll_core () ;
     }
   }
 #endif
@@ -183,6 +180,7 @@ mCS (inCS),
 mINT (inINT),
 mUsesTXQ (false),
 mHardwareTxFIFOFull (false),
+mRxInterruptEnabled (true),
 mHasDataBitRate (false),
 mTransmitFIFOPayload (0),
 mTXQBufferPayload (0),
@@ -514,13 +512,10 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
         mSPI.usingInterrupt (itPin) ; // usingInterrupt is not implemented in Arduino ESP32
       #endif
     }
-
-    /*
-     * If you begin() multiple times without constructor,
-     * mHardwareTxFIFOFull = true will block the transmitter.
-     */
-    mHardwareTxFIFOFull = false;
-    mHardwareReceiveBufferOverflowCount = 0;
+  // If you begin() multiple times without constructor,
+  // mHardwareTxFIFOFull = true will block the transmitter.
+    mHardwareTxFIFOFull = false ;
+    mHardwareReceiveBufferOverflowCount = 0 ;
   }
 //---
   return errorCode ;
@@ -631,20 +626,20 @@ void ACAN2517FD::appendInControllerTxFIFO (const CANFDMessage & inMessage) {
 //--- Word count
   const uint32_t wordCount = (inMessage.len + 3) / 4 ;
 //--- Write word register via 6-byte buffer (speed enhancement, thanks to thomasfla)
-  uint8_t buff[74] = {0} ;
+  uint8_t buffer [74] = {0} ;
 //--- Enter command
   const uint16_t writeCommand = (ramAddr & 0x0FFF) | (0b0010 << 12) ;
-  buff[0] = writeCommand >> 8 ;
-  buff[1] = writeCommand & 0xFF ;
+  buffer [0] = writeCommand >> 8 ;
+  buffer [1] = writeCommand & 0xFF ;
 //--- Enter values
-  enterU32InBufferAtIndex (idf, buff, 2) ;
-  enterU32InBufferAtIndex (flags, buff, 6) ;
+  enterU32InBufferAtIndex (idf, buffer, 2) ;
+  enterU32InBufferAtIndex (flags, buffer, 6) ;
   for (uint32_t i=0 ; i < wordCount ; i++) {
-    enterU32InBufferAtIndex (inMessage.data32 [i], buff, 10 + 4 * i) ;
+    enterU32InBufferAtIndex (inMessage.data32 [i], buffer, 10 + 4 * i) ;
   }
 //--- SPI transfer
   assertCS () ;
-    mSPI.transfer (buff, 10 + 4 * wordCount) ;
+    mSPI.transfer (buffer, 10 + 4 * wordCount) ;
   deassertCS () ;
 //--- Increment FIFO, send message (see DS20005688B, page 48)
   const uint8_t data8 = (1 << 0) | (1 << 1) ; // Set UINC bit, TXREQ bit
@@ -696,20 +691,20 @@ bool ACAN2517FD::sendViaTXQ (const CANFDMessage & inMessage) {
     //--- Word count
       const uint32_t wordCount = (inMessage.len + 3) / 4 ;
     //--- Transfer frame to the MCP2517FD
-      uint8_t buff[74] = {0} ;
+      uint8_t buffer [74] = {0} ;
     //--- Enter command
       const uint16_t writeCommand = (ramAddress & 0x0FFF) | (0b0010 << 12) ;
-      buff[0] = writeCommand >> 8 ;
-      buff[1] = writeCommand & 0xFF ;
+      buffer [0] = writeCommand >> 8 ;
+      buffer [1] = writeCommand & 0xFF ;
     //--- Enter values
-      enterU32InBufferAtIndex (idf, buff, 2) ;
-      enterU32InBufferAtIndex (flags, buff, 6) ;
+      enterU32InBufferAtIndex (idf, buffer, 2) ;
+      enterU32InBufferAtIndex (flags, buffer, 6) ;
       for (uint32_t i=0 ; i < wordCount ; i++) {
-        enterU32InBufferAtIndex (inMessage.data32 [i], buff, 10 + 4 * i) ;
+        enterU32InBufferAtIndex (inMessage.data32 [i], buffer, 10 + 4 * i) ;
       }
     //--- SPI transfer
       assertCS () ;
-        mSPI.transfer (buff, 10 + 4 * wordCount) ;
+        mSPI.transfer (buffer, 10 + 4 * wordCount) ;
       deassertCS () ;
     //--- Increment FIFO, send message (see DS20005688B, page 48)
       const uint8_t data8 = (1 << 0) | (1 << 1) ; // Set UINC bit, TXREQ bit
@@ -750,6 +745,16 @@ bool ACAN2517FD::receive (CANFDMessage & outMessage) {
       noInterrupts () ;
     #endif
       const bool hasReceivedMessage = mDriverReceiveBuffer.remove (outMessage) ;
+    //--- If receive interrupt is disabled, enable it (added in release 2.17)
+      if (mINT == 255) { // No interrupt pin
+        mRxInterruptEnabled = true ;
+        isr_poll_core () ; // Perform polling
+      }else if (!mRxInterruptEnabled) {
+        mRxInterruptEnabled = true ;
+        uint8_t data8 = readRegister8Assume_SPI_transaction (INT_REGISTER + 2) ;
+        data8 |= (1 << 1) ; // Receive FIFO Interrupt Enable
+        writeRegister8Assume_SPI_transaction (INT_REGISTER + 2, data8) ;
+      }
     #ifdef ARDUINO_ARCH_ESP32
       taskENABLE_INTERRUPTS () ;
     #else
@@ -796,7 +801,7 @@ bool ACAN2517FD::dispatchReceivedMessage (const tFilterMatchCallBack inFilterMat
 #ifndef ARDUINO_ARCH_ESP32
   void ACAN2517FD::poll (void) {
     noInterrupts () ;
-      while (isr_core ()) {}
+      isr_poll_core () ;
     interrupts () ;
   }
 #endif
@@ -820,7 +825,7 @@ bool ACAN2517FD::dispatchReceivedMessage (const tFilterMatchCallBack inFilterMat
 
 #ifndef ARDUINO_ARCH_ESP32
   void ACAN2517FD::isr (void) {
-    while (isr_core ()) {}
+    isr_poll_core () ;
   }
 #endif
 
@@ -828,50 +833,52 @@ bool ACAN2517FD::dispatchReceivedMessage (const tFilterMatchCallBack inFilterMat
 //   INTERRUPT SERVICE ROUTINES (common)
 //----------------------------------------------------------------------------------------------------------------------
 
-bool ACAN2517FD::isr_core (void) {
-  bool handled = false ;
+void ACAN2517FD::isr_poll_core (void) {
   mSPI.beginTransaction (mSPISettings) ;
     #ifdef ARDUINO_ARCH_ESP32
       taskDISABLE_INTERRUPTS () ;
     #endif
-      const uint16_t it = readRegister16Assume_SPI_transaction (INT_REGISTER) ; // DS20005688B, page 34
-      if ((it & (1 << 1)) != 0) { // Receive FIFO interrupt
-        receiveInterrupt () ;
-        handled = true ;
-      }
-      if ((it & (1 << 10)) != 0) { // Transmit Attempt interrupt
-      //--- Clear Pending Transmit Attempt interrupt bit
-        writeRegister8Assume_SPI_transaction (FIFOSTA_REGISTER (TRANSMIT_FIFO_INDEX), ~ (1 << 4)) ;
-        transmitInterrupt () ;
-        handled = true ;
-      }else if ((it & (1 << 0)) != 0) { // Transmit FIFO interrupt
-        transmitInterrupt () ;
-        handled = true ;
-      }
-      if ((it & (1 << 2)) != 0) { // TBCIF interrupt
-        writeRegister8Assume_SPI_transaction (INT_REGISTER, ~ (1 << 2)) ;
-        handled = true ;
-      }
-      if ((it & (1 << 3)) != 0) { // MODIF interrupt
-        writeRegister8Assume_SPI_transaction (INT_REGISTER, ~ (1 << 3)) ;
-        handled = true ;
-      }
-      if ((it & (1 << 12)) != 0) { // SERRIF interrupt
-        writeRegister8Assume_SPI_transaction (INT_REGISTER + 1, ~ (1 << 4)) ;
-        handled = true ;
-      }
-      if ((it & (1 << 11)) != 0) { // RXOVIF interrupt
-        handled = true ;
-        if (mHardwareReceiveBufferOverflowCount < 255) {
-          mHardwareReceiveBufferOverflowCount += 1 ;
+      bool handled = true ;
+        while (handled) {
+        handled = false ;
+        const uint16_t it = readRegister16Assume_SPI_transaction (INT_REGISTER) ; // DS20005688B, page 34
+        if (mRxInterruptEnabled && ((it & (1 << 1)) != 0)) { // Receive FIFO interrupt
+          receiveInterrupt () ;
+          handled = true ;
         }
-        writeRegister8Assume_SPI_transaction (FIFOSTA_REGISTER (RECEIVE_FIFO_INDEX), ~ (1 << 3)) ;
+        if ((it & (1 << 10)) != 0) { // Transmit Attempt interrupt
+        //--- Clear Pending Transmit Attempt interrupt bit
+          writeRegister8Assume_SPI_transaction (FIFOSTA_REGISTER (TRANSMIT_FIFO_INDEX), ~ (1 << 4)) ;
+          transmitInterrupt () ;
+          handled = true ;
+        }else if ((it & (1 << 0)) != 0) { // Transmit FIFO interrupt
+          transmitInterrupt () ;
+          handled = true ;
+        }
+        if ((it & (1 << 2)) != 0) { // TBCIF interrupt
+          writeRegister8Assume_SPI_transaction (INT_REGISTER, ~ (1 << 2)) ;
+          handled = true ;
+        }
+        if ((it & (1 << 3)) != 0) { // MODIF interrupt
+          writeRegister8Assume_SPI_transaction (INT_REGISTER, ~ (1 << 3)) ;
+          handled = true ;
+        }
+        if ((it & (1 << 12)) != 0) { // SERRIF interrupt
+          writeRegister8Assume_SPI_transaction (INT_REGISTER + 1, ~ (1 << 4)) ;
+          handled = true ;
+        }
+        if ((it & (1 << 11)) != 0) { // RXOVIF interrupt
+          handled = true ;
+          if (mHardwareReceiveBufferOverflowCount < 255) {
+            mHardwareReceiveBufferOverflowCount += 1 ;
+          }
+          writeRegister8Assume_SPI_transaction (FIFOSTA_REGISTER (RECEIVE_FIFO_INDEX), ~ (1 << 3)) ;
+        }
       }
     #ifdef ARDUINO_ARCH_ESP32
       taskENABLE_INTERRUPTS () ;
     #endif
   mSPI.endTransaction () ;
-  return handled ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -892,33 +899,33 @@ void ACAN2517FD::transmitInterrupt (void) { // Generated if hardware transmit FI
 //----------------------------------------------------------------------------------------------------------------------
 
 void ACAN2517FD::receiveInterrupt (void) {
-   const uint16_t ramAddress = uint16_t (0x400 + readRegister32Assume_SPI_transaction (FIFOUA_REGISTER (RECEIVE_FIFO_INDEX))) ;
+  const uint16_t ramAddress = uint16_t (0x400 + readRegister32Assume_SPI_transaction (FIFOUA_REGISTER (RECEIVE_FIFO_INDEX))) ;
   CANFDMessage message ;
 //--- Read word register via 6-byte buffer (speed enhancement, thanks to thomasfla)
-  uint8_t buff[74] = {0} ;
+  uint8_t buffer [74] = {0} ;
 //--- Enter command
   const uint16_t readCommand = (ramAddress & 0x0FFF) | (0b0011 << 12) ;
-  buff[0] = readCommand >> 8 ;
-  buff[1] = readCommand & 0xFF ;
+  buffer [0] = readCommand >> 8 ;
+  buffer [1] = readCommand & 0xFF ;
 //--- SPI transfer
   assertCS () ;
-    mSPI.transfer (buff, 74) ;
+    mSPI.transfer (buffer, 74) ;
   //--- Read identifier (see DS20005678A, page 42)
-    message.id = u32FromBufferAtIndex (buff, 2) ;
+    message.id = u32FromBufferAtIndex (buffer, 2) ;
   //--- Read DLC, RTR, IDE bits, and match filter index
-    const uint32_t flags = u32FromBufferAtIndex (buff, 6) ;
+    const uint32_t flags = u32FromBufferAtIndex (buffer, 6) ;
     static const uint8_t kLength [16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64} ;
     message.len = kLength [flags & 0x0F] ;
   //--- Write data (Swap data if processor is big endian)
     const uint32_t wordCount = (message.len + 3) / 4 ;
     for (uint32_t i=0 ; i < wordCount ; i++) {
-      message.data32 [i] = u32FromBufferAtIndex (buff, 10 + 4 * i) ;
+      message.data32 [i] = u32FromBufferAtIndex (buffer, 10 + 4 * i) ;
     }
   deassertCS () ;
 //--- Increment FIFO
   const uint8_t data8 = 1 << 0 ; // Set UINC bit (DS20005688B, page 52)
   writeRegister8Assume_SPI_transaction (FIFOCON_REGISTER (RECEIVE_FIFO_INDEX) + 1, data8) ;
-  message.idx = (uint8_t) ((flags >> 11) & 0x1F) ;
+  message.idx = uint8_t ((flags >> 11) & 0x1F) ;
 //--- Message type (DS20005678B, page 42)
   if ((flags & (1 << 5)) != 0 ) { // RTR bit
     message.type = CANFDMessage::CAN_REMOTE ;
@@ -937,6 +944,15 @@ void ACAN2517FD::receiveInterrupt (void) {
   }
 //--- Append message to driver receive FIFO
   mDriverReceiveBuffer.append (message) ;
+//--- If mDriverReceiveBuffer is full, disable receive interrupt (added in release 2.17)
+  if (mDriverReceiveBuffer.isFull ()) {
+    mRxInterruptEnabled = false ;
+    if (mINT != 255) {
+      uint8_t data8 = readRegister8Assume_SPI_transaction (INT_REGISTER + 2) ;
+      data8 &= ~ (1 << 1) ; // Receive FIFO Interrupt disable
+      writeRegister8Assume_SPI_transaction (INT_REGISTER + 2, data8) ;
+    }
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -958,16 +974,16 @@ void ACAN2517FD::deassertCS (void) {
 void ACAN2517FD::writeRegister32Assume_SPI_transaction (const uint16_t inRegisterAddress,
                                                         const uint32_t inValue) {
 //--- Write word register via 6-byte buffer (speed enhancement, thanks to thomasfla)
-  uint8_t buff[6] = {0} ;
+  uint8_t buffer [6] = {0} ;
 //--- Enter command
   const uint16_t writeCommand = (inRegisterAddress & 0x0FFF) | (0b0010 << 12) ;
-  buff[0] = writeCommand >> 8 ;
-  buff[1] = writeCommand & 0xFF ;
+  buffer [0] = writeCommand >> 8 ;
+  buffer [1] = writeCommand & 0xFF ;
 //--- Enter register value
-  enterU32InBufferAtIndex (inValue, buff, 2) ;
+  enterU32InBufferAtIndex (inValue, buffer, 2) ;
 //--- SPI transfer
   assertCS () ;
-    mSPI.transfer (buff, 6) ;
+    mSPI.transfer (buffer, 6) ;
   deassertCS () ;
 }
 
@@ -976,13 +992,13 @@ void ACAN2517FD::writeRegister32Assume_SPI_transaction (const uint16_t inRegiste
 void ACAN2517FD::writeRegister8Assume_SPI_transaction (const uint16_t inRegisterAddress,
                                                        const uint8_t inValue) {
 //--- Write byte register via 3-byte buffer (speed enhancement, thanks to thomasfla)
-  uint8_t buff[3] = {0} ;
+  uint8_t buffer [3] = {0} ;
   const uint16_t writeCommand = (inRegisterAddress & 0x0FFF) | (0b0010 << 12) ;
-  buff[0] = writeCommand >> 8 ;
-  buff[1] = writeCommand & 0xFF ;
-  buff[2] = inValue ;
+  buffer [0] = writeCommand >> 8 ;
+  buffer [1] = writeCommand & 0xFF ;
+  buffer [2] = inValue ;
   assertCS () ;
-    mSPI.transfer (buff, 3) ;
+    mSPI.transfer (buffer, 3) ;
   deassertCS () ;
 }
 
@@ -990,17 +1006,17 @@ void ACAN2517FD::writeRegister8Assume_SPI_transaction (const uint16_t inRegister
 
 uint32_t ACAN2517FD::readRegister32Assume_SPI_transaction (const uint16_t inRegisterAddress) {
 //--- Read word register via 6-byte buffer (speed enhancement, thanks to thomasfla)
-  uint8_t buff[6] = {0} ;
+  uint8_t buffer [6] = {0} ;
 //--- Enter command
   const uint16_t readCommand = (inRegisterAddress & 0x0FFF) | (0b0011 << 12) ;
-  buff[0] = readCommand >> 8 ;
-  buff[1] = readCommand & 0xFF ;
+  buffer [0] = readCommand >> 8 ;
+  buffer [1] = readCommand & 0xFF ;
 //--- SPI transfer
   assertCS () ;
-    mSPI.transfer (buff, 6) ;
+    mSPI.transfer (buffer, 6) ;
   deassertCS () ;
 //--- Get result
-  const uint32_t result = u32FromBufferAtIndex (buff, 2) ;
+  const uint32_t result = u32FromBufferAtIndex (buffer, 2) ;
 //---
   return result ;
 }
@@ -1009,17 +1025,17 @@ uint32_t ACAN2517FD::readRegister32Assume_SPI_transaction (const uint16_t inRegi
 
 uint16_t ACAN2517FD::readRegister16Assume_SPI_transaction (const uint16_t inRegisterAddress) {
 //--- Read half-word register via 4-byte buffer (speed enhancement, thanks to thomasfla)
-  uint8_t buff[4] = {0} ;
+  uint8_t buffer [4] = {0} ;
 //--- Enter command
   const uint16_t readCommand = (inRegisterAddress & 0x0FFF) | (0b0011 << 12) ;
-  buff[0] = readCommand >> 8 ;
-  buff[1] = readCommand & 0xFF ;
+  buffer [0] = readCommand >> 8 ;
+  buffer [1] = readCommand & 0xFF ;
 //--- SPI transfer
   assertCS () ;
-    mSPI.transfer (buff, 4) ;
+    mSPI.transfer (buffer, 4) ;
   deassertCS () ;
 //--- Get result
-  const uint16_t result = u16FromBufferAtIndex (buff, 2) ;
+  const uint16_t result = u16FromBufferAtIndex (buffer, 2) ;
 //---
   return result ;
 }
@@ -1028,14 +1044,14 @@ uint16_t ACAN2517FD::readRegister16Assume_SPI_transaction (const uint16_t inRegi
 
 uint8_t ACAN2517FD::readRegister8Assume_SPI_transaction (const uint16_t inRegisterAddress) {
 //--- Read byte register via 3-byte buffer (speed enhancement, thanks to thomasfla)
-  uint8_t buff[3] = {0} ;
+  uint8_t buffer [3] = {0} ;
   const uint16_t readCommand = (inRegisterAddress & 0x0FFF) | (0b0011 << 12) ;
-  buff[0] = readCommand >> 8;
-  buff[1] = readCommand & 0xFF;
+  buffer [0] = readCommand >> 8;
+  buffer [1] = readCommand & 0xFF;
   assertCS () ;
-    mSPI.transfer(buff, 3) ;
+    mSPI.transfer(buffer, 3) ;
   deassertCS () ;
-  return buff[2] ;
+  return buffer [2] ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

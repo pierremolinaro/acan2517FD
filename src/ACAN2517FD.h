@@ -41,27 +41,27 @@ class ACAN2517FD {
                           const ACAN2517FDFilters & inFilters) ;
 
 //--- Error code returned by begin
-  public: static const uint32_t kRequestedConfigurationModeTimeOut  = ((uint32_t) 1) <<  0 ;
-  public: static const uint32_t kReadBackErrorWith1MHzSPIClock      = ((uint32_t) 1) <<  1 ;
-  public: static const uint32_t kTooFarFromDesiredBitRate           = ((uint32_t) 1) <<  2 ;
-  public: static const uint32_t kInconsistentBitRateSettings        = ((uint32_t) 1) <<  3 ;
-  public: static const uint32_t kINTPinIsNotAnInterrupt             = ((uint32_t) 1) <<  4 ;
-  public: static const uint32_t kISRIsNull                          = ((uint32_t) 1) <<  5 ;
-  public: static const uint32_t kFilterDefinitionError              = ((uint32_t) 1) <<  6 ;
-  public: static const uint32_t kMoreThan32Filters                  = ((uint32_t) 1) <<  7 ;
-  public: static const uint32_t kControllerReceiveFIFOSizeIsZero    = ((uint32_t) 1) <<  8 ;
-  public: static const uint32_t kControllerReceiveFIFOSizeGreaterThan32 = ((uint32_t) 1) << 9 ;
-  public: static const uint32_t kControllerTransmitFIFOSizeIsZero    = ((uint32_t) 1) << 10 ;
-  public: static const uint32_t kControllerTransmitFIFOSizeGreaterThan32 = ((uint32_t) 1) << 11 ;
-  public: static const uint32_t kControllerRamUsageGreaterThan2048   = ((uint32_t) 1) << 12 ;
-  public: static const uint32_t kControllerTXQPriorityGreaterThan31  = ((uint32_t) 1) << 13 ;
-  public: static const uint32_t kControllerTransmitFIFOPriorityGreaterThan31 = ((uint32_t) 1) << 14 ;
-  public: static const uint32_t kControllerTXQSizeGreaterThan32     = ((uint32_t) 1) << 15 ;
-  public: static const uint32_t kRequestedModeTimeOut               = ((uint32_t) 1) << 16 ;
-  public: static const uint32_t kX10PLLNotReadyWithin1MS            = ((uint32_t) 1) << 17 ;
-  public: static const uint32_t kReadBackErrorWithFullSpeedSPIClock = ((uint32_t) 1) << 18 ;
-  public: static const uint32_t kISRNotNullAndNoIntPin              = ((uint32_t) 1) << 19 ;
-  public: static const uint32_t kInvalidTDCO                        = ((uint32_t) 1) << 20 ;
+  public: static const uint32_t kRequestedConfigurationModeTimeOut  = uint32_t (1) <<  0 ;
+  public: static const uint32_t kReadBackErrorWith1MHzSPIClock      = uint32_t (1) <<  1 ;
+  public: static const uint32_t kTooFarFromDesiredBitRate           = uint32_t (1) <<  2 ;
+  public: static const uint32_t kInconsistentBitRateSettings        = uint32_t (1) <<  3 ;
+  public: static const uint32_t kINTPinIsNotAnInterrupt             = uint32_t (1) <<  4 ;
+  public: static const uint32_t kISRIsNull                          = uint32_t (1) <<  5 ;
+  public: static const uint32_t kFilterDefinitionError              = uint32_t (1) <<  6 ;
+  public: static const uint32_t kMoreThan32Filters                  = uint32_t (1) <<  7 ;
+  public: static const uint32_t kControllerReceiveFIFOSizeIsZero    = uint32_t (1) <<  8 ;
+  public: static const uint32_t kControllerReceiveFIFOSizeGreaterThan32 = uint32_t (1) << 9 ;
+  public: static const uint32_t kControllerTransmitFIFOSizeIsZero    = uint32_t (1) << 10 ;
+  public: static const uint32_t kControllerTransmitFIFOSizeGreaterThan32 = uint32_t (1) << 11 ;
+  public: static const uint32_t kControllerRamUsageGreaterThan2048   = uint32_t (1) << 12 ;
+  public: static const uint32_t kControllerTXQPriorityGreaterThan31  = uint32_t (1) << 13 ;
+  public: static const uint32_t kControllerTransmitFIFOPriorityGreaterThan31 = uint32_t (1) << 14 ;
+  public: static const uint32_t kControllerTXQSizeGreaterThan32     = uint32_t (1) << 15 ;
+  public: static const uint32_t kRequestedModeTimeOut               = uint32_t (1) << 16 ;
+  public: static const uint32_t kX10PLLNotReadyWithin1MS            = uint32_t (1) << 17 ;
+  public: static const uint32_t kReadBackErrorWithFullSpeedSPIClock = uint32_t (1) << 18 ;
+  public: static const uint32_t kISRNotNullAndNoIntPin              = uint32_t (1) << 19 ;
+  public: static const uint32_t kInvalidTDCO                        = uint32_t (1) << 20 ;
 
 //······················································································································
 //   Send a message
@@ -124,10 +124,11 @@ class ACAN2517FD {
 
   private: SPISettings mSPISettings ;
   private: SPIClass & mSPI ;
-  private: uint8_t mCS ;
-  private: uint8_t mINT ;
+  private: const uint8_t mCS ;
+  private: const uint8_t mINT ;
   private: bool mUsesTXQ ;
   private: bool mHardwareTxFIFOFull ;
+  private: bool mRxInterruptEnabled ; // Added in 2.1.7
   private: bool mHasDataBitRate ;
   private: uint8_t mTransmitFIFOPayload ; // in byte count
   private: uint8_t mTXQBufferPayload ; // in byte count
@@ -144,6 +145,8 @@ class ACAN2517FD {
   public: uint32_t driverReceiveBufferPeakCount (void) const { return mDriverReceiveBuffer.peakCount () ; }
 
   public: uint8_t hardwareReceiveBufferOverflowCount (void) const { return mHardwareReceiveBufferOverflowCount ; }
+
+  public: void resetHardwareReceiveBufferOverflowCount (void) { mHardwareReceiveBufferOverflowCount = 0 ; }
 
 //······················································································································
 //    Transmit buffer
@@ -194,7 +197,7 @@ class ACAN2517FD {
 //······················································································································
 
   public: void isr (void) ;
-  public: bool isr_core (void) ;
+  public: void isr_poll_core (void) ;
   private: void receiveInterrupt (void) ;
   private: void transmitInterrupt (void) ;
   #ifdef ARDUINO_ARCH_ESP32

@@ -24,7 +24,6 @@ class ACANFDBuffer {
   mBuffer (NULL),
   mSize (0),
   mReadIndex (0),
-  mWriteIndex (0),
   mCount (0),
   mPeakCount (0) {
   }
@@ -44,7 +43,6 @@ class ACANFDBuffer {
   private: CANFDMessage * mBuffer ;
   private: uint32_t mSize ;
   private: uint32_t mReadIndex ;
-  private: uint32_t mWriteIndex ;
   private: uint32_t mCount ;
   private: uint32_t mPeakCount ; // > mSize if overflow did occur
 
@@ -54,6 +52,7 @@ class ACANFDBuffer {
 
   public: inline uint32_t size (void) const { return mSize ; }
   public: inline uint32_t count (void) const { return mCount ; }
+  public: inline bool isFull (void) const { return mCount == mSize ; } // Added in release 2.17 (thanks to Flole998)
   public: inline uint32_t peakCount (void) const { return mPeakCount ; }
 
 //······················································································································
@@ -64,7 +63,6 @@ class ACANFDBuffer {
     mBuffer = new CANFDMessage [inSize] ;
     mSize = inSize ;
     mReadIndex = 0 ;
-    mWriteIndex = 0 ;
     mCount = 0 ;
     mPeakCount = 0 ;
   }
@@ -76,12 +74,16 @@ class ACANFDBuffer {
   public: bool append (const CANFDMessage & inMessage) {
     const bool ok = mCount < mSize ;
     if (ok) {
-      mBuffer [mWriteIndex] = inMessage ;
-      mWriteIndex += 1 ;
-      if (mWriteIndex == mSize) {
-        mWriteIndex = 0 ;
+      uint32_t writeIndex = mReadIndex + mCount ;
+      if (writeIndex >= mSize) {
+        writeIndex -= mSize ;
       }
-      mCount ++ ;
+      mBuffer [writeIndex] = inMessage ;
+//       mWriteIndex += 1 ;
+//       if (mWriteIndex == mSize) {
+//         mWriteIndex = 0 ;
+//       }
+      mCount += 1 ;
       if (mPeakCount < mCount) {
         mPeakCount = mCount ;
       }

@@ -99,6 +99,7 @@ void setup () {
 //----------------------------------------------------------------------------------------------------------------------
 
 static uint32_t gBlinkLedDate = 0 ;
+static uint32_t gReceiveDate = 0 ;
 static uint32_t gReceivedFrameCount = 0 ;
 static uint32_t gSentFrameCount = 0 ;
 
@@ -108,7 +109,7 @@ void loop() {
   can.poll () ; // Call can.poll as often as possible
   CANFDMessage frame ;
   if (gBlinkLedDate < millis ()) {
-    gBlinkLedDate += 2000 ;
+    gBlinkLedDate += 1000 ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
     frame.len = 64 ;
     for (uint8_t i=0 ; i<frame.len ; i++) {
@@ -123,20 +124,23 @@ void loop() {
       Serial.println ("Send failure") ;
     }
   }
-  if (can.available ()) {
-    can.receive (frame) ;
-    bool ok = frame.len == 64 ;
-    if (!ok) {
-      Serial.println ("length error") ;
+  if (gReceiveDate < millis ()) {
+    gReceiveDate += 4567 ;
+    while (can.available ()) {
+      can.receive (frame) ;
+      bool ok = frame.len == 64 ;
+      if (!ok) {
+        Serial.println ("length error") ;
+      }
+      for (uint8_t i=0 ; (i<frame.len) && ok ; i++) {
+        ok = frame.data [i] == i ;
+      }
+      gReceivedFrameCount ++ ;
+      Serial.print ("Received: ") ;
+      Serial.print (gReceivedFrameCount) ;
+      Serial.print (", ") ;
+      Serial.println (ok ? "ok" : "error") ;
     }
-    for (uint8_t i=0 ; (i<frame.len) && ok ; i++) {
-      ok = frame.data [i] == i ;
-    }
-    gReceivedFrameCount ++ ;
-    Serial.print ("Received: ") ;
-    Serial.print (gReceivedFrameCount) ;
-    Serial.print (", ") ;
-    Serial.println (ok ? "ok" : "error") ;
   }
 }
 

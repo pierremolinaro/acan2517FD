@@ -77,6 +77,7 @@ void setup () {
 //——————————————————————————————————————————————————————————————————————————————
 
 static uint32_t gSendDate = 0 ;
+static uint32_t gReceiveDate = 0 ;
 static uint32_t gReceivedFrameCount = 0 ;
 static uint32_t gSentFrameCount = 0 ;
 
@@ -85,21 +86,26 @@ static uint32_t gSentFrameCount = 0 ;
 void loop () {
   CANFDMessage frame ;
   if (gSendDate < millis ()) {
-    gSendDate += 2000 ;
+    gSendDate += 1000 ;
     const bool ok = can.tryToSend (frame) ;
     if (ok) {
       gSentFrameCount += 1 ;
       Serial.print ("Sent: ") ;
-      Serial.println (gSentFrameCount) ;
+      Serial.print (gSentFrameCount) ;
     }else{
-      Serial.println ("Send failure") ;
+      Serial.print ("Send failure") ;
     }
+    Serial.print (", receive overflows: ") ;
+    Serial.println (can.hardwareReceiveBufferOverflowCount ()) ;
   }
-  if (can.available ()) {
-    can.receive (frame) ;
-    gReceivedFrameCount ++ ;
-    Serial.print ("Received: ") ;
-    Serial.println (gReceivedFrameCount) ;
+  if (gReceiveDate < millis ()) {
+    gReceiveDate += 4567 ;
+    while (can.available ()) {
+      can.receive (frame) ;
+      gReceivedFrameCount ++ ;
+      Serial.print ("Received: ") ;
+      Serial.println (gReceivedFrameCount) ;
+    }
   }
 }
 
