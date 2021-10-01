@@ -69,11 +69,15 @@ class CANFDMessage {
   public : uint8_t idx ;  // This field is used by the driver
   public : uint8_t len ;  // Length of data (0 ... 64)
   public : union {
-    uint64_t data64 [ 8]    ; // Caution: subject to endianness
-    uint32_t data32 [16]    ; // Caution: subject to endianness
-    uint16_t data16 [32]    ; // Caution: subject to endianness
+    uint64_t data64    [ 8] ; // Caution: subject to endianness
+    int64_t  data_s64  [ 8] ; // Caution: subject to endianness
+    uint32_t data32    [16] ; // Caution: subject to endianness
+    int32_t  data_s32  [16] ; // Caution: subject to endianness
     float    dataFloat [16] ; // Caution: subject to endianness
-    uint8_t  data   [64] ;
+    uint16_t data16    [32] ; // Caution: subject to endianness
+    int16_t  data_s16  [32] ; // Caution: subject to endianness
+    int8_t   data_s8   [64] ;
+    uint8_t  data      [64] ;
   } ;
 
 //·············································································
