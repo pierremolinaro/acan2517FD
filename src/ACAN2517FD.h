@@ -64,6 +64,13 @@ class ACAN2517FD {
   public: static const uint32_t kInvalidTDCO                        = uint32_t (1) << 20 ;
 
 //······················································································································
+//   end method (resets the MCP2517FD, deallocate buffers, and detach interrupt pin)
+//   Return true if end method succeeds, and false otherwise
+//······················································································································
+
+  public: bool end (void) ;
+
+//······················································································································
 //   Send a message
 //······················································································································
 
@@ -122,6 +129,9 @@ class ACAN2517FD {
 //    Private properties
 //······················································································································
 
+  #ifdef ARDUINO_ARCH_ESP32
+    private: TaskHandle_t mESP32TaskHandle = nullptr ;
+  #endif
   private: SPISettings mSPISettings ;
   private: SPIClass & mSPI ;
   private: const uint8_t mCS ;

@@ -502,7 +502,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
       }
     }
     #ifdef ARDUINO_ARCH_ESP32
-      xTaskCreate (myESP32Task, "ACAN2517Handler", 1024, this, 256, NULL) ;
+      xTaskCreate (myESP32Task, "ACAN2517Handler", 1024, this, 256, &mESP32TaskHandle) ;
     #endif
     if (mINT != 255) { // 255 means interrupt is not used
       #ifdef ARDUINO_ARCH_ESP32
@@ -519,6 +519,61 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   }
 //---
   return errorCode ;
+}
+
+//······················································································································
+//   end method (resets the MCP2517FD, deallocate buffers, and detach interrupt pin)
+//······················································································································
+
+bool ACAN2517FD::end (void) {
+  mSPI.beginTransaction (mSPISettings) ;
+    #ifdef ARDUINO_ARCH_ESP32
+      taskDISABLE_INTERRUPTS () ;
+    #else
+      noInterrupts () ;
+    #endif
+  //--- Detach interrupt pin
+    if (mINT != 255) { // 255 means interrupt is not used
+      const int8_t itPin = digitalPinToInterrupt (mINT) ;
+      detachInterrupt (itPin) ; // Available for ESP32 and Arduino
+    }
+  //--- Request configuration mode
+    bool wait = true ;
+    bool ok = false ;
+    const uint32_t deadline = millis () + 2 ; // Wait (2 ms max) until the configuration mode is reached
+    while (wait) {
+      writeRegister8Assume_SPI_transaction (CON_REGISTER + 3, 0x04 | (1 << 3)) ; // Request configuration mode, abort all transmissions
+      const uint8_t actualMode = (readRegister8Assume_SPI_transaction (CON_REGISTER + 2) >> 5) & 0x07 ;
+      ok = actualMode == 0x04 ;
+      wait = !ok ;
+      if (wait && (millis () >= deadline)) {
+        wait = false ;
+      }
+    }
+  //--- Reset MCP2517FD
+    assertCS () ;
+      mSPI.transfer16 (0x00) ; // Reset instruction: 0x0000
+    deassertCS () ;
+  //--- ESP32: delete associated task
+    #ifdef ARDUINO_ARCH_ESP32
+      if (mESP32TaskHandle != nullptr) {
+        vTaskDelete (mESP32TaskHandle) ;
+        mESP32TaskHandle = nullptr ;
+      }
+    #endif
+  //--- Deallocate buffers
+    delete [] mCallBackFunctionArray ; mCallBackFunctionArray = nullptr ;
+    mDriverReceiveBuffer.initWithSize (0) ;
+    mDriverTransmitBuffer.initWithSize (0) ;
+  //---
+    #ifdef ARDUINO_ARCH_ESP32
+      taskENABLE_INTERRUPTS () ;
+    #else
+      interrupts () ;
+    #endif
+  mSPI.endTransaction () ;
+//---
+  return ok ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

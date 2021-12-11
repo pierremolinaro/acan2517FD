@@ -60,7 +60,7 @@ class ACANFDBuffer {
 //······················································································································
 
   public: void initWithSize (const uint32_t inSize) {
-    mBuffer = new CANFDMessage [inSize] ;
+    delete [] mBuffer ; mBuffer = new CANFDMessage [inSize] ;
     mSize = inSize ;
     mReadIndex = 0 ;
     mCount = 0 ;
@@ -79,10 +79,6 @@ class ACANFDBuffer {
         writeIndex -= mSize ;
       }
       mBuffer [writeIndex] = inMessage ;
-//       mWriteIndex += 1 ;
-//       if (mWriteIndex == mSize) {
-//         mWriteIndex = 0 ;
-//       }
       mCount += 1 ;
       if (mPeakCount < mCount) {
         mPeakCount = mCount ;

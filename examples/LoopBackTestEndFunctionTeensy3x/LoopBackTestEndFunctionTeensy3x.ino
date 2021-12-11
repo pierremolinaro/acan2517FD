@@ -1,6 +1,9 @@
 //——————————————————————————————————————————————————————————————————————————————
 //  ACAN2517FD Demo in loopback mode, using hardware SPI1, with an external interrupt
 //——————————————————————————————————————————————————————————————————————————————
+//  Every 1 000 messages, this sketch calls the end method, deallocates the driver,
+//  creates a new one, and configures it by calling the begin method.
+//——————————————————————————————————————————————————————————————————————————————
 
 #include <ACAN2517FD.h>
 
@@ -27,7 +30,7 @@ static const byte MCP2517_INT = 38 ; // INT output of MCP2517
 //  ACAN2517FD Driver object
 //——————————————————————————————————————————————————————————————————————————————
 
-ACAN2517FD can (MCP2517_CS, SPI1, MCP2517_INT) ;
+ACAN2517FD * can = NULL ;
 
 //——————————————————————————————————————————————————————————————————————————————
 //   SETUP
@@ -59,7 +62,7 @@ void setup () {
   Serial.println (SPI1.pinIsSCK (MCP2517_SCK) ? "yes" : "NO!!!") ;
   SPI1.setMOSI (MCP2517_SDI) ;
   SPI1.setMISO (MCP2517_SDO) ;
-  SPI1.setSCK (MCP2517_SCK) ;
+  SPI1.setSCK  (MCP2517_SCK) ;
 //----------------------------------- Begin SPI1
   SPI1.begin () ;
 //--- Configure ACAN2517FD
@@ -73,7 +76,8 @@ void setup () {
   Serial.print (settings.ramUsage ()) ;
   Serial.println (" bytes") ;
 //--- Begin
-  const uint32_t errorCode = can.begin (settings, [] { can.isr () ; }) ;
+  can = new ACAN2517FD (MCP2517_CS, SPI1, MCP2517_INT) ;
+  const uint32_t errorCode = can->begin (settings, [] { can->isr () ; }) ;
   if (errorCode == 0) {
     Serial.print ("Bit Rate prescaler: ") ;
     Serial.println (settings.mBitRatePrescaler) ;
@@ -135,6 +139,22 @@ void loop () {
   }
 //--- Send frame ?
   if (!gWaitingForReception) {
+    if ((gFrameCount % 1000) == 0) {
+    //--- Stop CAN 
+      const bool ok = can->end () ;
+      delete can ; can = NULL ;
+      Serial.print ("Reset MCP2517FD, ") ;
+      Serial.println (ok ? "ok" : "error") ;
+   //--- Settings
+      ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000, DataBitRateFactor::x1) ;
+    //--- Select loopback mode
+      settings.mRequestedMode = ACAN2517FDSettings::InternalLoopBack ;
+    //--- Begin
+     can = new ACAN2517FD (MCP2517_CS, SPI1, MCP2517_INT) ;
+     const uint32_t errorCode = can->begin (settings, [] { can->isr () ; }) ;
+      Serial.print ("Reconfigure MCP2517FD, error ") ;
+      Serial.println (errorCode) ;
+    }
     gCurrentFrame.ext = (random () & 1) == 0 ;
     gCurrentFrame.id = (uint32_t) random () ;
     if (gCurrentFrame.ext) {
@@ -148,7 +168,7 @@ void loop () {
     }
     gCurrentFrame.pad () ;
     gDebit += gCurrentFrame.len ;
-    const bool ok = can.tryToSend (gCurrentFrame) ;
+    const bool ok = can->tryToSend (gCurrentFrame) ;
     if (ok) {
       gFrameCount += 1 ;
       gWaitingForReception = true ;
@@ -157,10 +177,10 @@ void loop () {
     }
   }
 //--- Receive message ?
-  if (gWaitingForReception && can.available ()) {
+  if (gWaitingForReception && can->available ()) {
     gWaitingForReception = false ;
     CANFDMessage frame ;
-    can.receive (frame) ;
+    can->receive (frame) ;
   //--- Check receive frame is identical to sent frame
     if (frame.ext != gCurrentFrame.ext) {
       Serial.println ("ext error") ;
