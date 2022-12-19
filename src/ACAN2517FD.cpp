@@ -282,12 +282,12 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     mSPISettings = SPISettings (1000UL * 1000, MSBFIRST, SPI_MODE0) ;
   //----------------------------------- Request configuration mode
     bool wait = true ;
-    const uint32_t deadline = millis () + 2 ; // Wait (2 ms max) until the configuration mode is reached
+    const uint32_t startTime = millis () ; 
     while (wait) {
       writeRegister8 (CON_REGISTER + 3, 0x04 | (1 << 3)) ; // Request configuration mode, abort all transmissions
       const uint8_t actualMode = (readRegister8 (CON_REGISTER + 2) >> 5) & 0x07 ;
       wait = actualMode != 0x04 ;
-      if (wait && (millis () >= deadline)) {
+      if (wait && (millis () - startTime > 2)) { // Wait (2 ms max) until the configuration mode is reached
         errorCode |= kRequestedConfigurationModeTimeOut ;
         wait = false ;
       }
@@ -338,10 +338,10 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   //--- Wait for PLL is ready (wait max 2 ms)
     if (pll != 0) {
       bool wait = true ;
-      const uint32_t deadline = millis () + 2 ;
+      const uint32_t startTime = millis () ;
       while (wait) {
         wait = (readRegister8 (OSC_REGISTER + 1) & 0x1) == 0 ;  // DS20005688B, page 16
-        if (wait && (millis () >= deadline)) {
+        if (wait && (millis () - startTime > 2)) {
           errorCode = kX10PLLNotReadyWithin1MS ;
           wait = false ;
         }
@@ -492,11 +492,11 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     writeRegister8 (CON_REGISTER + 3, mTXBWS_RequestedMode);
   //----------------------------------- Wait (10 ms max) until requested mode is reached
     bool wait = true ;
-    const uint32_t deadline = millis () + 10 ;
+    const uint32_t startTime () ;
     while (wait) {
      const uint8_t actualMode = (readRegister8 (CON_REGISTER + 2) >> 5) & 0x07 ;
       wait = actualMode != inSettings.mRequestedMode ;
-      if (wait && (millis () >= deadline)) {
+      if (wait && (millis () - startTime > 10) {
         errorCode |= kRequestedModeTimeOut ;
         wait = false ;
       }
@@ -540,13 +540,13 @@ bool ACAN2517FD::end (void) {
   //--- Request configuration mode
     bool wait = true ;
     bool ok = false ;
-    const uint32_t deadline = millis () + 2 ; // Wait (2 ms max) until the configuration mode is reached
+    const uint32_t startTime = millis () ; 
     while (wait) {
       writeRegister8Assume_SPI_transaction (CON_REGISTER + 3, 0x04 | (1 << 3)) ; // Request configuration mode, abort all transmissions
       const uint8_t actualMode = (readRegister8Assume_SPI_transaction (CON_REGISTER + 2) >> 5) & 0x07 ;
       ok = actualMode == 0x04 ;
       wait = !ok ;
-      if (wait && (millis () >= deadline)) {
+      if (wait && (millis () - startTime > 2)) { // Wait (2 ms max) until the configuration mode is reached
         wait = false ;
       }
     }
@@ -1224,12 +1224,12 @@ bool ACAN2517FD::recoverFromRestrictedOperationMode (void) {
     writeRegister8 (CON_REGISTER + 3, mTXBWS_RequestedMode);
   //----------------------------------- Wait (10 ms max) until requested mode is reached
     bool wait = true ;
-    const uint32_t deadline = millis () + 10 ;
+    const uint32_t startTime = millis () ;
     while (wait) {
       const uint8_t actualMode = (readRegister8 (CON_REGISTER + 2) >> 5) & 0x07 ;
       wait = actualMode != (mTXBWS_RequestedMode & 0x07) ;
       recoveryDone = !wait ;
-      if (wait && (millis () >= deadline)) {
+      if (wait && (millis () - startTime > 10)) {
         wait = false ;
       }
     }
