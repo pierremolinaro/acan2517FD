@@ -276,8 +276,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     if (mINT != 255) { // 255 means interrupt is not used (thanks to Tyler Lewis)
       pinMode (mINT, INPUT_PULLUP) ;
     }
-    deassertCS () ;
-    pinMode (mCS, OUTPUT) ;
+    initCS(mCS);
   //----------------------------------- Set SPI clock to 1 MHz
     mSPISettings = SPISettings (1000UL * 1000, MSBFIRST, SPI_MODE0) ;
   //----------------------------------- Request configuration mode
@@ -1014,15 +1013,115 @@ void ACAN2517FD::receiveInterrupt (void) {
 //   MCP2517FD REGISTER ACCESS, SECOND LEVEL FUNCTIONS (HANDLE CS, ASSUME WITHIN SPI TRANSACTION)
 //----------------------------------------------------------------------------------------------------------------------
 
-void ACAN2517FD::assertCS (void) {
-  digitalWrite (mCS, LOW) ;
-}
+#if defined(__AVR__)
+	static volatile uint8_t *cs_pin_reg;
+	static uint8_t cs_pin_mask;
+	inline static void initCS(uint8_t cs_pin) {
+		cs_pin_reg = portOutputRegister(digitalPinToPort(cs_pin));
+		cs_pin_mask = digitalPinToBitMask(cs_pin);
+		pinMode(cs_pin, OUTPUT);
+	}
+	inline static void assertCS() {
+		*(cs_pin_reg) &= ~cs_pin_mask;
+	}
+	inline static void deassertCS() {
+		*(cs_pin_reg) |= cs_pin_mask;
+	}
+#elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK66FX1M0__) || defined(__MK64FX512__)
+	static volatile uint8_t *cs_pin_reg;
+	inline static void initCS(uint8_t cs_pin) {
+		cs_pin_reg = portOutputRegister(cs_pin);
+		pinMode(cs_pin, OUTPUT);
+	}
+	inline static void assertCS() {
+		*(cs_pin_reg+256) = 1;
+	}
+	inline static void deassertCS() {
+		*(cs_pin_reg+128) = 1;
+	}
+#elif defined(__MKL26Z64__)
+	static volatile uint8_t *cs_pin_reg;
+	static uint8_t cs_pin_mask;
+	inline static void initCS(uint8_t cs_pin) {
+		cs_pin_reg = portOutputRegister(digitalPinToPort(cs_pin));
+		cs_pin_mask = digitalPinToBitMask(cs_pin);
+		pinMode(cs_pin, OUTPUT);
+	}
+	inline static void assertCS() {
+		*(cs_pin_reg+8) = cs_pin_mask;
+	}
+	inline static void deassertCS() {
+		*(cs_pin_reg+4) = cs_pin_mask;
+	}
+#elif defined(__SAM3X8E__) || defined(__SAM3A8C__) || defined(__SAM3A4C__)
+	static volatile uint32_t *cs_pin_reg;
+	static uint32_t cs_pin_mask;
+	inline static void initCS(uint8_t cs_pin) {
+		cs_pin_reg = &(digitalPinToPort(cs_pin)->PIO_PER);
+		cs_pin_mask = digitalPinToBitMask(cs_pin);
+		pinMode(cs_pin, OUTPUT);
+	}
+	inline static void assertCS() {
+		*(cs_pin_reg+13) = cs_pin_mask;
+	}
+	inline static void deassertCS() {
+		*(cs_pin_reg+12) = cs_pin_mask;
+	}
+#elif defined(__PIC32MX__)
+	static volatile uint32_t *cs_pin_reg;
+	static uint32_t cs_pin_mask;
+	inline static void initCS(uint8_t cs_pin) {
+		cs_pin_reg = portModeRegister(digitalPinToPort(cs_pin));
+		cs_pin_mask = digitalPinToBitMask(cs_pin);
+		pinMode(cs_pin, OUTPUT);
+	}
+	inline static void assertCS() {
+		*(cs_pin_reg+8+1) = cs_pin_mask;
+	}
+	inline static void deassertCS() {
+		*(cs_pin_reg+8+2) = cs_pin_mask;
+	}
 
-//----------------------------------------------------------------------------------------------------------------------
+#elif defined(ARDUINO_ARCH_ESP8266)
+	static volatile uint32_t *cs_pin_reg;
+	static uint32_t cs_pin_mask;
+	inline static void initCS(uint8_t cs_pin) {
+		cs_pin_reg = (volatile uint32_t*)GPO;
+		cs_pin_mask = 1 << cs_pin;
+		pinMode(cs_pin, OUTPUT);
+	}
+	inline static void assertCS() {
+		GPOC = cs_pin_mask;
+	}
+	inline static void deassertCS() {
+		GPOS = cs_pin_mask;
+	}
 
-void ACAN2517FD::deassertCS (void) {
-  digitalWrite (mCS, HIGH) ;
-}
+#elif defined(__SAMD21G18A__)
+	static volatile uint32_t *cs_pin_reg;
+	static uint32_t cs_pin_mask;
+	inline static void initCS(uint8_t cs_pin) {
+		cs_pin_reg = portModeRegister(digitalPinToPort(cs_pin));
+		cs_pin_mask = digitalPinToBitMask(cs_pin);
+		pinMode(cs_pin, OUTPUT);
+	}
+	inline static void assertCS() {
+		*(cs_pin_reg+5) = cs_pin_mask;
+	}
+	inline static void deassertCS() {
+		*(cs_pin_reg+6) = cs_pin_mask;
+	}
+#else
+	inline static void initCS(uint8_t cs_pin) {
+		pinMode(cs_pin, OUTPUT);
+	}
+	inline static void assertCS() {
+		digitalWrite(cs_pin, LOW);
+	}
+	inline static void deassertCS() {
+		digitalWrite(cs_pin, HIGH);
+	}
+#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 
