@@ -276,17 +276,17 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     if (mINT != 255) { // 255 means interrupt is not used (thanks to Tyler Lewis)
       pinMode (mINT, INPUT_PULLUP) ;
     }
-    initCS(mCS);
+    initCS () ;
   //----------------------------------- Set SPI clock to 1 MHz
     mSPISettings = SPISettings (1000UL * 1000, MSBFIRST, SPI_MODE0) ;
   //----------------------------------- Request configuration mode
     bool wait = true ;
-    const uint32_t startTime = millis () ; 
+    const uint32_t startTime = millis () ;
     while (wait) {
       writeRegister8 (CON_REGISTER + 3, 0x04 | (1 << 3)) ; // Request configuration mode, abort all transmissions
       const uint8_t actualMode = (readRegister8 (CON_REGISTER + 2) >> 5) & 0x07 ;
       wait = actualMode != 0x04 ;
-      if (wait && (millis () - startTime > 2)) { // Wait (2 ms max) until the configuration mode is reached
+      if (wait && ((millis () - startTime) > 2)) { // Wait (2 ms max) until the configuration mode is reached
         errorCode |= kRequestedConfigurationModeTimeOut ;
         wait = false ;
       }
@@ -340,7 +340,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
       const uint32_t startTime = millis () ;
       while (wait) {
         wait = (readRegister8 (OSC_REGISTER + 1) & 0x1) == 0 ;  // DS20005688B, page 16
-        if (wait && (millis () - startTime > 2)) {
+        if (wait && ((millis () - startTime) > 2)) {
           errorCode = kX10PLLNotReadyWithin1MS ;
           wait = false ;
         }
@@ -491,11 +491,11 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     writeRegister8 (CON_REGISTER + 3, mTXBWS_RequestedMode);
   //----------------------------------- Wait (10 ms max) until requested mode is reached
     bool wait = true ;
-    const uint32_t startTime () ;
+    const uint32_t startTime = millis () ;
     while (wait) {
      const uint8_t actualMode = (readRegister8 (CON_REGISTER + 2) >> 5) & 0x07 ;
       wait = actualMode != inSettings.mRequestedMode ;
-      if (wait && (millis () - startTime > 10) {
+      if (wait && ((millis () - startTime) > 10)) {
         errorCode |= kRequestedModeTimeOut ;
         wait = false ;
       }
@@ -539,13 +539,13 @@ bool ACAN2517FD::end (void) {
   //--- Request configuration mode
     bool wait = true ;
     bool ok = false ;
-    const uint32_t startTime = millis () ; 
+    const uint32_t startTime = millis () ;
     while (wait) {
       writeRegister8Assume_SPI_transaction (CON_REGISTER + 3, 0x04 | (1 << 3)) ; // Request configuration mode, abort all transmissions
       const uint8_t actualMode = (readRegister8Assume_SPI_transaction (CON_REGISTER + 2) >> 5) & 0x07 ;
       ok = actualMode == 0x04 ;
       wait = !ok ;
-      if (wait && (millis () - startTime > 2)) { // Wait (2 ms max) until the configuration mode is reached
+      if (wait && ((millis () - startTime) > 2)) { // Wait (2 ms max) until the configuration mode is reached
         wait = false ;
       }
     }
@@ -1013,118 +1013,6 @@ void ACAN2517FD::receiveInterrupt (void) {
 //   MCP2517FD REGISTER ACCESS, SECOND LEVEL FUNCTIONS (HANDLE CS, ASSUME WITHIN SPI TRANSACTION)
 //----------------------------------------------------------------------------------------------------------------------
 
-#if defined(__AVR__)
-	static volatile uint8_t *cs_pin_reg;
-	static uint8_t cs_pin_mask;
-	inline static void initCS(uint8_t cs_pin) {
-		cs_pin_reg = portOutputRegister(digitalPinToPort(cs_pin));
-		cs_pin_mask = digitalPinToBitMask(cs_pin);
-		pinMode(cs_pin, OUTPUT);
-	}
-	inline static void assertCS() {
-		*(cs_pin_reg) &= ~cs_pin_mask;
-	}
-	inline static void deassertCS() {
-		*(cs_pin_reg) |= cs_pin_mask;
-	}
-#elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK66FX1M0__) || defined(__MK64FX512__)
-	static volatile uint8_t *cs_pin_reg;
-	inline static void initCS(uint8_t cs_pin) {
-		cs_pin_reg = portOutputRegister(cs_pin);
-		pinMode(cs_pin, OUTPUT);
-	}
-	inline static void assertCS() {
-		*(cs_pin_reg+256) = 1;
-	}
-	inline static void deassertCS() {
-		*(cs_pin_reg+128) = 1;
-	}
-#elif defined(__MKL26Z64__)
-	static volatile uint8_t *cs_pin_reg;
-	static uint8_t cs_pin_mask;
-	inline static void initCS(uint8_t cs_pin) {
-		cs_pin_reg = portOutputRegister(digitalPinToPort(cs_pin));
-		cs_pin_mask = digitalPinToBitMask(cs_pin);
-		pinMode(cs_pin, OUTPUT);
-	}
-	inline static void assertCS() {
-		*(cs_pin_reg+8) = cs_pin_mask;
-	}
-	inline static void deassertCS() {
-		*(cs_pin_reg+4) = cs_pin_mask;
-	}
-#elif defined(__SAM3X8E__) || defined(__SAM3A8C__) || defined(__SAM3A4C__)
-	static volatile uint32_t *cs_pin_reg;
-	static uint32_t cs_pin_mask;
-	inline static void initCS(uint8_t cs_pin) {
-		cs_pin_reg = &(digitalPinToPort(cs_pin)->PIO_PER);
-		cs_pin_mask = digitalPinToBitMask(cs_pin);
-		pinMode(cs_pin, OUTPUT);
-	}
-	inline static void assertCS() {
-		*(cs_pin_reg+13) = cs_pin_mask;
-	}
-	inline static void deassertCS() {
-		*(cs_pin_reg+12) = cs_pin_mask;
-	}
-#elif defined(__PIC32MX__)
-	static volatile uint32_t *cs_pin_reg;
-	static uint32_t cs_pin_mask;
-	inline static void initCS(uint8_t cs_pin) {
-		cs_pin_reg = portModeRegister(digitalPinToPort(cs_pin));
-		cs_pin_mask = digitalPinToBitMask(cs_pin);
-		pinMode(cs_pin, OUTPUT);
-	}
-	inline static void assertCS() {
-		*(cs_pin_reg+8+1) = cs_pin_mask;
-	}
-	inline static void deassertCS() {
-		*(cs_pin_reg+8+2) = cs_pin_mask;
-	}
-
-#elif defined(ARDUINO_ARCH_ESP8266)
-	static volatile uint32_t *cs_pin_reg;
-	static uint32_t cs_pin_mask;
-	inline static void initCS(uint8_t cs_pin) {
-		cs_pin_reg = (volatile uint32_t*)GPO;
-		cs_pin_mask = 1 << cs_pin;
-		pinMode(cs_pin, OUTPUT);
-	}
-	inline static void assertCS() {
-		GPOC = cs_pin_mask;
-	}
-	inline static void deassertCS() {
-		GPOS = cs_pin_mask;
-	}
-
-#elif defined(__SAMD21G18A__)
-	static volatile uint32_t *cs_pin_reg;
-	static uint32_t cs_pin_mask;
-	inline static void initCS(uint8_t cs_pin) {
-		cs_pin_reg = portModeRegister(digitalPinToPort(cs_pin));
-		cs_pin_mask = digitalPinToBitMask(cs_pin);
-		pinMode(cs_pin, OUTPUT);
-	}
-	inline static void assertCS() {
-		*(cs_pin_reg+5) = cs_pin_mask;
-	}
-	inline static void deassertCS() {
-		*(cs_pin_reg+6) = cs_pin_mask;
-	}
-#else
-	inline static void initCS(uint8_t cs_pin) {
-		pinMode(cs_pin, OUTPUT);
-	}
-	inline static void assertCS() {
-		digitalWrite(cs_pin, LOW);
-	}
-	inline static void deassertCS() {
-		digitalWrite(cs_pin, HIGH);
-	}
-#endif
-
-//----------------------------------------------------------------------------------------------------------------------
-
 void ACAN2517FD::writeRegister32Assume_SPI_transaction (const uint16_t inRegisterAddress,
                                                         const uint32_t inValue) {
 //--- Write word register via 6-byte buffer (speed enhancement, thanks to thomasfla)
@@ -1328,7 +1216,7 @@ bool ACAN2517FD::recoverFromRestrictedOperationMode (void) {
       const uint8_t actualMode = (readRegister8 (CON_REGISTER + 2) >> 5) & 0x07 ;
       wait = actualMode != (mTXBWS_RequestedMode & 0x07) ;
       recoveryDone = !wait ;
-      if (wait && (millis () - startTime > 10)) {
+      if (wait && ((millis () - startTime) > 10)) {
         wait = false ;
       }
     }
