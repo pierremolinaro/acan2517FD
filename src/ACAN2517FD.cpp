@@ -30,7 +30,7 @@ static const uint8_t TXBWS = 0;
 //   - (May 29, 2019) it appears that MCP2717FD wants the CS line to deasserted as soon as possible (thanks for
 //     Nick Kirkby for having signaled me this point, see https://github.com/pierremolinaro/acan2517/issues/5);
 //     so we mask interrupts when we access the MCP2517FD, the sequence becomes:
-//           mSPI.beginTransaction (mSPISettings) ;
+//           mSPI.beginTransaction (SPISettings) ;
 //             #ifdef ARDUINO_ARCH_ESP32
 //               taskDISABLE_INTERRUPTS () ;
 //             #endif
@@ -163,12 +163,10 @@ static uint16_t u16FromBufferAtIndex(uint8_t ioBuffer[], const uint8_t inIndex) 
 //----------------------------------------------------------------------------------------------------------------------
 
 ACAN2517FD::ACAN2517FD(
-        const uint8_t inCS, // CS input of MCP2517FD
-        SPIClass &inSPI    // Hardware SPI object
+        SPIHardwareInterface &inSPI    // Hardware SPI object
 ) :
-        mSPISettings(),
         mSPI(inSPI),
-        mCS(inCS),
+        isConfigurationMode(false),
         mUsesTXQ(false),
         mHardwareTxFIFOFull(false),
         mRxInterruptEnabled(true),
@@ -246,9 +244,12 @@ uint32_t ACAN2517FD::begin(const ACAN2517FDSettings &inSettings,
     }
 //----------------------------------- INT, CS pins, reset MCP2517FD
     if (errorCode == 0) {
-        initCS();
+        //  SPI init
+        mSPI.setSPIClock(inSettings.sysClock() / 2);
+        //  CS init
+        mSPI.initCS();
         //----------------------------------- Set SPI clock to 1 MHz
-        mSPISettings = SPISettings(1000UL * 1000, MSBFIRST, SPI_MODE0);
+        isConfigurationMode = true;
         //----------------------------------- Request configuration mode
         bool wait = true;
         const uint32_t startTime = millis();
@@ -318,7 +319,7 @@ uint32_t ACAN2517FD::begin(const ACAN2517FDSettings &inSettings,
         }
     }
 //----------------------------------- Set full speed clock
-    mSPISettings = SPISettings(inSettings.sysClock() / 2, MSBFIRST, SPI_MODE0);
+    isConfigurationMode = false;
 //----------------------------------- Checking SPI connection is on (with a full speed clock)
 //    We write and read back 2517 RAM at address 0x400
     for (uint32_t i = 1; (i != 0) && (errorCode == 0); i <<= 1) {
@@ -484,7 +485,7 @@ uint32_t ACAN2517FD::begin(const ACAN2517FDSettings &inSettings,
 //······················································································································
 
 bool ACAN2517FD::end(void) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
     //--- Request configuration mode
     bool wait = true;
     bool ok = false;
@@ -500,9 +501,9 @@ bool ACAN2517FD::end(void) {
         }
     }
     //--- Reset MCP2517FD
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer16(0x00); // Reset instruction: 0x0000
-    deassertCS();
+    mSPI.deassertCS();
     //--- Deallocate buffers
     delete[] mCallBackFunctionArray;
     mCallBackFunctionArray = nullptr;
@@ -520,7 +521,7 @@ bool ACAN2517FD::end(void) {
 bool ACAN2517FD::tryToSend(const CANFDMessage &inMessage) {
     bool ok = inMessage.isValid();
     if (ok) {
-        mSPI.beginTransaction(mSPISettings);
+        mSPI.beginTransaction(isConfigurationMode);
         if (inMessage.idx == 0) {
             ok = inMessage.len <= mTransmitFIFOPayload;
             if (ok) {
@@ -635,9 +636,9 @@ void ACAN2517FD::appendInControllerTxFIFO(const CANFDMessage &inMessage) {
         enterU32InBufferAtIndex(inMessage.data32[i], buffer, 10 + 4 * i);
     }
 //--- SPI transfer
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer(buffer, 10 + 4 * wordCount);
-    deassertCS();
+    mSPI.deassertCS();
 //--- Increment FIFO, send message (see DS20005688B, page 48)
     const uint8_t data8 = (1 << 0) | (1 << 1); // Set UINC bit, TXREQ bit
     writeRegister8Assume_SPI_transaction(FIFOCON_REGISTER(TRANSMIT_FIFO_INDEX) + 1, data8);
@@ -700,9 +701,9 @@ bool ACAN2517FD::sendViaTXQ(const CANFDMessage &inMessage) {
                 enterU32InBufferAtIndex(inMessage.data32[i], buffer, 10 + 4 * i);
             }
             //--- SPI transfer
-            assertCS();
+            mSPI.assertCS();
             mSPI.transfer(buffer, 10 + 4 * wordCount);
-            deassertCS();
+            mSPI.deassertCS();
             //--- Increment FIFO, send message (see DS20005688B, page 48)
             const uint8_t data8 = (1 << 0) | (1 << 1); // Set UINC bit, TXREQ bit
             writeRegister8Assume_SPI_transaction(TXQCON_REGISTER + 1, data8);
@@ -716,7 +717,7 @@ bool ACAN2517FD::sendViaTXQ(const CANFDMessage &inMessage) {
 //----------------------------------------------------------------------------------------------------------------------
 
 bool ACAN2517FD::available(void) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
     const bool hasReceivedMessage = mDriverReceiveBuffer.count() > 0;
     mSPI.endTransaction();
     return hasReceivedMessage;
@@ -725,7 +726,7 @@ bool ACAN2517FD::available(void) {
 //----------------------------------------------------------------------------------------------------------------------
 
 bool ACAN2517FD::receive(CANFDMessage &outMessage) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
     const bool hasReceivedMessage = mDriverReceiveBuffer.remove(outMessage);
     //--- If receive interrupt is disabled, enable it (added in release 2.17)
     if (!mRxInterruptEnabled) {
@@ -769,7 +770,7 @@ void ACAN2517FD::poll(void) {
 //----------------------------------------------------------------------------------------------------------------------
 
 void ACAN2517FD::isr_poll_core(void) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
     bool handled = true;
     while (handled) {
         handled = false;
@@ -838,7 +839,7 @@ void ACAN2517FD::receiveInterrupt(void) {
     buffer[0] = readCommand >> 8;
     buffer[1] = readCommand & 0xFF;
 //--- SPI transfer
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer(buffer, 74);
     //--- Read identifier (see DS20005678A, page 42)
     message.id = u32FromBufferAtIndex(buffer, 2);
@@ -851,7 +852,7 @@ void ACAN2517FD::receiveInterrupt(void) {
     for (uint32_t i = 0; i < wordCount; i++) {
         message.data32[i] = u32FromBufferAtIndex(buffer, 10 + 4 * i);
     }
-    deassertCS();
+    mSPI.deassertCS();
 //--- Increment FIFO
     const uint8_t data8 = 1 << 0; // Set UINC bit (DS20005688B, page 52)
     writeRegister8Assume_SPI_transaction(FIFOCON_REGISTER(RECEIVE_FIFO_INDEX) + 1, data8);
@@ -895,9 +896,9 @@ void ACAN2517FD::writeRegister32Assume_SPI_transaction(const uint16_t inRegister
 //--- Enter register value
     enterU32InBufferAtIndex(inValue, buffer, 2);
 //--- SPI transfer
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer(buffer, 6);
-    deassertCS();
+    mSPI.deassertCS();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -910,9 +911,9 @@ void ACAN2517FD::writeRegister8Assume_SPI_transaction(const uint16_t inRegisterA
     buffer[0] = writeCommand >> 8;
     buffer[1] = writeCommand & 0xFF;
     buffer[2] = inValue;
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer(buffer, 3);
-    deassertCS();
+    mSPI.deassertCS();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -925,9 +926,9 @@ uint32_t ACAN2517FD::readRegister32Assume_SPI_transaction(const uint16_t inRegis
     buffer[0] = readCommand >> 8;
     buffer[1] = readCommand & 0xFF;
 //--- SPI transfer
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer(buffer, 6);
-    deassertCS();
+    mSPI.deassertCS();
 //--- Get result
     const uint32_t result = u32FromBufferAtIndex(buffer, 2);
 //---
@@ -944,9 +945,9 @@ uint16_t ACAN2517FD::readRegister16Assume_SPI_transaction(const uint16_t inRegis
     buffer[0] = readCommand >> 8;
     buffer[1] = readCommand & 0xFF;
 //--- SPI transfer
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer(buffer, 4);
-    deassertCS();
+    mSPI.deassertCS();
 //--- Get result
     const uint16_t result = u16FromBufferAtIndex(buffer, 2);
 //---
@@ -961,9 +962,9 @@ uint8_t ACAN2517FD::readRegister8Assume_SPI_transaction(const uint16_t inRegiste
     const uint16_t readCommand = (inRegisterAddress & 0x0FFF) | (0b0011 << 12);
     buffer[0] = readCommand >> 8;
     buffer[1] = readCommand & 0xFF;
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer(buffer, 3);
-    deassertCS();
+    mSPI.deassertCS();
     return buffer[2];
 }
 
@@ -972,7 +973,7 @@ uint8_t ACAN2517FD::readRegister8Assume_SPI_transaction(const uint16_t inRegiste
 //----------------------------------------------------------------------------------------------------------------------
 
 void ACAN2517FD::writeRegister8(const uint16_t inRegisterAddress, const uint8_t inValue) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
 
     writeRegister8Assume_SPI_transaction(inRegisterAddress, inValue);
 
@@ -982,7 +983,7 @@ void ACAN2517FD::writeRegister8(const uint16_t inRegisterAddress, const uint8_t 
 //----------------------------------------------------------------------------------------------------------------------
 
 uint8_t ACAN2517FD::readRegister8(const uint16_t inRegisterAddress) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
 
     const uint8_t result = readRegister8Assume_SPI_transaction(inRegisterAddress);
 
@@ -993,7 +994,7 @@ uint8_t ACAN2517FD::readRegister8(const uint16_t inRegisterAddress) {
 //----------------------------------------------------------------------------------------------------------------------
 
 uint16_t ACAN2517FD::readRegister16(const uint16_t inRegisterAddress) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
 
     const uint16_t result = readRegister16Assume_SPI_transaction(inRegisterAddress);
 
@@ -1004,7 +1005,7 @@ uint16_t ACAN2517FD::readRegister16(const uint16_t inRegisterAddress) {
 //----------------------------------------------------------------------------------------------------------------------
 
 void ACAN2517FD::writeRegister32(const uint16_t inRegisterAddress, const uint32_t inValue) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
 
     writeRegister32Assume_SPI_transaction(inRegisterAddress, inValue);
 
@@ -1014,7 +1015,7 @@ void ACAN2517FD::writeRegister32(const uint16_t inRegisterAddress, const uint32_
 //----------------------------------------------------------------------------------------------------------------------
 
 uint32_t ACAN2517FD::readRegister32(const uint16_t inRegisterAddress) {
-    mSPI.beginTransaction(mSPISettings);
+    mSPI.beginTransaction(isConfigurationMode);
 
     const uint32_t result = readRegister32Assume_SPI_transaction(inRegisterAddress);
 
@@ -1058,11 +1059,11 @@ bool ACAN2517FD::recoverFromRestrictedOperationMode(void) {
 //----------------------------------------------------------------------------------------------------------------------
 
 void ACAN2517FD::reset2517FD(void) {
-    mSPI.beginTransaction(mSPISettings); // Check RESET is performed with 1 MHz clock
+    mSPI.beginTransaction(isConfigurationMode); // Check RESET is performed with 1 MHz clock
 
-    assertCS();
+    mSPI.assertCS();
     mSPI.transfer16(0x00); // Reset instruction: 0x0000
-    deassertCS();
+    mSPI.deassertCS();
 
     mSPI.endTransaction();
 }

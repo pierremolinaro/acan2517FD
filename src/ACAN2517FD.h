@@ -13,7 +13,7 @@
 #include <ACANFDBuffer.h>
 #include <CANMessage.h>
 #include <ACAN2517FDFilters.h>
-#include <SPI.h>
+#include <SPIHardwareInterface.h>
 
 //----------------------------------------------------------------------------------------------------------------------
 //   ACAN2517FD class
@@ -26,10 +26,7 @@ class ACAN2517FD {
 //······················································································································
 
 public:
-    ACAN2517FD(
-            const uint8_t inCS, // CS input of MCP2517FD
-            SPIClass &inSPI// Hardware SPI object
-    );
+    ACAN2517FD(SPIHardwareInterface &inSPI);
 
 //······················································································································
 //   begin method (returns 0 if no error)
@@ -165,13 +162,10 @@ public:
 //······················································································································
 //    Private properties
 //······················································································································
-
 private:
-    SPISettings mSPISettings;
+    SPIHardwareInterface &mSPI;
 private:
-    SPIClass &mSPI;
-private:
-    const uint8_t mCS;
+    bool isConfigurationMode;
 private:
     bool mUsesTXQ;
 private:
@@ -288,124 +282,6 @@ private:
 private:
     void transmitInterrupt(void);
 
-//----------------------------------------------------------------------------------------------------------------------
-//    Optimized CS handling (thanks to Flole998)
-//······················································································································
-
-#if defined(__AVR__)
-    private: volatile uint8_t *cs_pin_reg;
-    private: uint8_t cs_pin_mask;
-    private: inline void initCS () {
-      cs_pin_reg = portOutputRegister(digitalPinToPort(mCS));
-      cs_pin_mask = digitalPinToBitMask(mCS);
-      pinMode(mCS, OUTPUT);
-    }
-    private: inline void assertCS() {
-      *(cs_pin_reg) &= ~cs_pin_mask;
-    }
-    private: inline void deassertCS() {
-      *(cs_pin_reg) |= cs_pin_mask;
-    }
-#elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK66FX1M0__) || defined(__MK64FX512__)
-    private: volatile uint8_t *cs_pin_reg;
-    private: inline void initCS () {
-      cs_pin_reg = portOutputRegister(mCS);
-      pinMode(mCS, OUTPUT);
-    }
-    private: inline void assertCS() {
-      *(cs_pin_reg+256) = 1;
-    }
-    private: inline void deassertCS() {
-      *(cs_pin_reg+128) = 1;
-    }
-#elif defined(__MKL26Z64__)
-    private: volatile uint8_t *cs_pin_reg;
-    private: uint8_t cs_pin_mask;
-    private: inline void initCS () {
-      cs_pin_reg = portOutputRegister(digitalPinToPort(mCS));
-      cs_pin_mask = digitalPinToBitMask(mCS);
-      pinMode(mCS, OUTPUT);
-    }
-    private: inline void assertCS() {
-      *(cs_pin_reg+8) = cs_pin_mask;
-    }
-    private: inline void deassertCS() {
-      *(cs_pin_reg+4) = cs_pin_mask;
-    }
-#elif defined(__SAM3X8E__) || defined(__SAM3A8C__) || defined(__SAM3A4C__)
-    private: volatile uint32_t *cs_pin_reg;
-    private: uint32_t cs_pin_mask;
-    private: inline void initCS () {
-      cs_pin_reg = &(digitalPinToPort(mCS)->PIO_PER);
-      cs_pin_mask = digitalPinToBitMask(mCS);
-      pinMode(mCS, OUTPUT);
-    }
-    private: inline void assertCS() {
-      *(cs_pin_reg+13) = cs_pin_mask;
-    }
-    private: inline void deassertCS() {
-      *(cs_pin_reg+12) = cs_pin_mask;
-    }
-#elif defined(__PIC32MX__)
-    private: volatile uint32_t *cs_pin_reg;
-    private: uint32_t cs_pin_mask;
-    private: inline void initCS () {
-      cs_pin_reg = portModeRegister(digitalPinToPort(mCS));
-      cs_pin_mask = digitalPinToBitMask(mCS);
-      pinMode(mCS, OUTPUT);
-    }
-    private: inline void assertCS() {
-      *(cs_pin_reg+8+1) = cs_pin_mask;
-    }
-    private: inline void deassertCS() {
-      *(cs_pin_reg+8+2) = cs_pin_mask;
-    }
-#elif defined(ARDUINO_ARCH_ESP8266)
-    // private: volatile uint32_t *cs_pin_reg;
-    private: uint32_t cs_pin_mask;
-    private: inline void initCS () {
-      // cs_pin_reg = (volatile uint32_t*)GPO;
-      cs_pin_mask = 1 << mCS;
-      pinMode(mCS, OUTPUT);
-    }
-    private: inline void assertCS() {
-      GPOC = cs_pin_mask;
-    }
-    private: inline void deassertCS() {
-      GPOS = cs_pin_mask;
-    }
-
-#elif defined(__SAMD21G18A__)
-    private: volatile uint32_t *cs_pin_reg;
-    private: uint32_t cs_pin_mask;
-    private: inline void initCS () {
-      cs_pin_reg = portModeRegister(digitalPinToPort(mCS));
-      cs_pin_mask = digitalPinToBitMask(mCS);
-      pinMode(mCS, OUTPUT);
-    }
-    private: inline void assertCS() {
-      *(cs_pin_reg+5) = cs_pin_mask;
-    }
-    private: inline void deassertCS() {
-      *(cs_pin_reg+6) = cs_pin_mask;
-    }
-#else
-private:
-    inline void initCS() {
-        pinMode(mCS, OUTPUT);
-    }
-
-private:
-    inline void assertCS() {
-        digitalWrite(mCS, LOW);
-    }
-
-private:
-    inline void deassertCS() {
-        digitalWrite(mCS, HIGH);
-    }
-
-#endif
 
 //······················································································································
 //    No copy
