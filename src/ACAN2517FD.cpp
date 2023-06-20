@@ -11,39 +11,6 @@
 
 static const uint8_t TXBWS = 0;
 
-//----------------------------------------------------------------------------------------------------------------------
-// Note about ESP32
-//----------------------------------------------------------------------------------------------------------------------
-//
-// It appears that Arduino ESP32 interrupts are managed in a completely different way from "usual" Arduino:
-//   - SPI.usingInterrupt is not implemented;
-//   - noInterrupts() and interrupts() are NOPs: use taskDISABLE_INTERRUPTS and taskENABLE_INTERRUPTS;
-//   - interrupt service routines should be fast, otherwise you get an "Guru Meditation Error: Core 1 panic'ed
-//     (Interrupt wdt timeout on CPU1)".
-//
-// So we handle the ESP32 interrupt in the following way:
-//   - interrupt service routine performs a xSemaphoreGiveFromISR on mISRSemaphore of can driver
-//   - this activates the myESP32Task task that performs "isr_poll_core" that is done by interrupt service routine
-//     in "usual" Arduino;
-//   - as this task runs in parallel with setup / loop routines, SPI access is natively protected by the
-//     beginTransaction / endTransaction pair, that manages a mutex;
-//   - (May 29, 2019) it appears that MCP2717FD wants the CS line to deasserted as soon as possible (thanks for
-//     Nick Kirkby for having signaled me this point, see https://github.com/pierremolinaro/acan2517/issues/5);
-//     so we mask interrupts when we access the MCP2517FD, the sequence becomes:
-//           mSPI.beginTransaction (SPISettings) ;
-//             #ifdef ARDUINO_ARCH_ESP32
-//               taskDISABLE_INTERRUPTS () ;
-//             #endif
-//               assertCS () ;
-//                  ... Access the MCP2517FD ...
-//               deassertCS () ;
-//             #ifdef ARDUINO_ARCH_ESP32
-//               taskENABLE_INTERRUPTS () ;
-//             #endif
-//           mSPI.endTransaction () ;
-//
-//----------------------------------------------------------------------------------------------------------------------
-
 
 //----------------------------------------------------------------------------------------------------------------------
 // ACAN2517FD register addresses
