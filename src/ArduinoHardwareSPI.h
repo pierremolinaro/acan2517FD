@@ -11,33 +11,32 @@
 class ArduinoHardwareSPI : public SPIHardwareInterface
 {
 public:
-  ArduinoHardwareSPI(SPIClass & dev, const uint8_t cs);
+    ArduinoHardwareSPI(SPIClass & dev, const uint8_t cs);
 
-  virtual void beginTransaction(bool configuration_mode = false);
+    virtual void beginTransaction(bool configuration_mode = false);
 
-  virtual void endTransaction();
+    virtual void endTransaction();
 
-  virtual int transfer(const uint8_t *buffer, int length);
+    virtual int transfer(const uint8_t *buffer, int length);
 
-  virtual int transfer16(const uint16_t data);
+    virtual int transfer16(const uint16_t data);
 
-  virtual void initCS();
+    virtual void initCS();
 
-  virtual inline void assertCS();
+    virtual inline void assertCS();
 
-  virtual inline void deassertCS();
+    virtual inline void deassertCS();
 
-  void setSPIClock(const uint32_t spiClock) override;
+    void setSPIClock(const uint32_t spiClock) override;
 
 private:
-  //  SPI
-  SPIClass & _dev;
-  //  CS
-  const uint8_t _cs;
-  //  SPI settings
-  SPISettings _normalSPISettings;
-  SPISettings _configurationSPISettings;
-
+    //  SPI
+    SPIClass & _dev;
+    //  CS
+    const uint8_t _cs;
+    //  SPI settings
+    SPISettings _normalSPISettings;
+    SPISettings _configurationSPISettings;
 };
 
 #endif

@@ -5,56 +5,56 @@
 ArduinoHardwareSPI::ArduinoHardwareSPI(SPIClass & dev, const uint8_t cs)
   : _dev(dev), _cs(cs)
 {
-  //  init spi settings
-  //  1Mhz
-  _configurationSPISettings = SPISettings (1000UL * 1000, MSBFIRST, SPI_MODE0);
+    //  init spi settings
+    //  1Mhz
+    _configurationSPISettings = SPISettings (1000UL * 1000, MSBFIRST, SPI_MODE0);
 }
 
 void ArduinoHardwareSPI::beginTransaction(bool configuration_mode)
 {
-  if (configuration_mode)
-  {
-    _dev.beginTransaction(_configurationSPISettings);
-  }
-  else
-  {
-    _dev.beginTransaction(_normalSPISettings);
-  }
+    if (configuration_mode)
+    {
+        _dev.beginTransaction(_configurationSPISettings);
+    }
+    else
+    {
+        _dev.beginTransaction(_normalSPISettings);
+    }
 }
 
 void ArduinoHardwareSPI::endTransaction()
 {
-  _dev.endTransaction();
+    _dev.endTransaction();
 }
 
 int ArduinoHardwareSPI::transfer(const uint8_t *buffer, int length)
 {
-  _dev.transfer(buffer, length);
+    _dev.transfer(buffer, length);
 
-  return 0;
+    return 0;
 }
 
 int ArduinoHardwareSPI::transfer16(const uint16_t data)
 {
-  _dev.transfer16(data);
+    _dev.transfer16(data);
 
-  return 0;
+    return 0;
 }
 
 void ArduinoHardwareSPI::initCS()
 {
-  //  init CS pin
-  pinMode(_cs, OUTPUT);
+    //  init CS pin
+    pinMode(_cs, OUTPUT);
 }
 
 inline void ArduinoHardwareSPI::assertCS()
 {
-  digitalWrite(_cs, LOW);
+    digitalWrite(_cs, LOW);
 }
 
 inline void ArduinoHardwareSPI::deassertCS()
 {
-  digitalWrite(_cs, HIGH);
+    digitalWrite(_cs, HIGH);
 }
 
 void ArduinoHardwareSPI::setSPIClock(const uint32_t spiClock)
