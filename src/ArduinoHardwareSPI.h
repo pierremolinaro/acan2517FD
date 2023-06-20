@@ -11,9 +11,9 @@
 class ArduinoHardwareSPI : public SPIHardwareInterface
 {
 public:
-  ArduinoHardwareSPI(SPIClass & dev, const uint8_t cs, const uint32_t spiClock);
+  ArduinoHardwareSPI(SPIClass & dev, const uint8_t cs);
 
-  virtual void beginTransaction(bool configuration_mode = false) = 0;
+  virtual void beginTransaction(bool configuration_mode = false);
 
   virtual void endTransaction();
 
@@ -27,6 +27,8 @@ public:
 
   virtual inline void deassertCS();
 
+  void setSPIClock(const uint32_t spiClock) override;
+
 private:
   //  SPI
   SPIClass & _dev;
@@ -35,8 +37,6 @@ private:
   //  SPI settings
   SPISettings _normalSPISettings;
   SPISettings _configurationSPISettings;
-  //  SPI max clock
-  const uint32_t _spiClock;
 
 };
 

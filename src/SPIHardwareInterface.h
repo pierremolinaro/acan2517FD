@@ -60,6 +60,21 @@ public:
    * 
    */
   virtual inline void deassertCS();
+
+  /////////////////////////////////
+  //  settings
+  /////////////////////////////////
+  
+  /**
+   * @brief set system clock
+   * 
+   */
+  virtual void setSPIClock(const uint32_t spiClock) {
+    _spiClock = spiClock;
+  }
+
+protected:
+  uint32_t _spiClock;
 };
 
 #endif
