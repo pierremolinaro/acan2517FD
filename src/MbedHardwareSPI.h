@@ -15,19 +15,19 @@ class MbedHardwareSPI : public SPIHardwareInterface
 public:
     MbedHardwareSPI(SPI & dev, const PinName csPin);
 
-    virtual void beginTransaction(bool configuration_mode = false);
+    void beginTransaction(bool configuration_mode = false) override;
 
-    virtual void endTransaction();
+    void endTransaction() override;
 
-    virtual int transfer(const uint8_t *buffer, int length);
+    int transfer(const uint8_t *buffer, int length) override;
 
-    virtual int transfer16(const uint16_t data);
+    int transfer16(const uint16_t data) override;
 
-    virtual void initCS();
+    void initCS() override;
 
-    virtual inline void assertCS();
+    inline void assertCS() override;
 
-    virtual inline void deassertCS();
+    inline void deassertCS() override;
 
     void setSPIClock(const uint32_t spiClock) override;
 
