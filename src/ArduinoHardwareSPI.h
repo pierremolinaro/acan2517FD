@@ -3,8 +3,8 @@
 #ifndef _ARDUINO_SPI_H_
 #define _ARDUINO_SPI_H_
 
-#include <Arduino.h>
-#include <SPI.h>
+#include "Arduino.h"
+#include "SPI.h"
 
 #include "SPIHardwareInterface.h"
 
