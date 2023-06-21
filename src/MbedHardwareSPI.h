@@ -7,6 +7,9 @@
 
 #include "SPIHardwareInterface.h"
 
+namespace acan2517fd {
+
+
 class MbedHardwareSPI : public SPIHardwareInterface
 {
 public:
@@ -37,6 +40,9 @@ private:
     //  mode
     bool _configuration_mode;
 };
+
+}
+
 #endif
 
 #endif

@@ -2,6 +2,9 @@
 
 #include "ArduinoHardwareSPI.h"
 
+namespace acan2517fd {
+
+
 ArduinoHardwareSPI::ArduinoHardwareSPI(SPIClass & dev, const uint8_t cs)
   : _dev(dev), _cs(cs)
 {
@@ -64,6 +67,8 @@ void ArduinoHardwareSPI::setSPIClock(const uint32_t spiClock)
 
     //  initialize spi settings
     _normalSPISettings = SPISettings(_spiClock, MSBFIRST, SPI_MODE0);
+}
+
 }
 
 #endif

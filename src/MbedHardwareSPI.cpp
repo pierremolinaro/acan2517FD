@@ -2,6 +2,8 @@
 
 #include "MbedHardwareSPI.h"
 
+namespace acan2517fd {
+
 MbedHardwareSPI::MbedHardwareSPI(SPI & dev, const PinName csPin)
   : _dev(dev), _cs(csPin)
 {
@@ -70,6 +72,8 @@ void MbedHardwareSPI::setSPIClock(const uint32_t spiClock)
 {
     //  super
     SPIHardwareInterface::setSPIClock(spiClock);
+}
+
 }
 
 #endif

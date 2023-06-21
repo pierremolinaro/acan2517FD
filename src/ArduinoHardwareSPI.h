@@ -8,6 +8,9 @@
 
 #include "SPIHardwareInterface.h"
 
+namespace acan2517fd {
+
+
 class ArduinoHardwareSPI : public SPIHardwareInterface
 {
 public:
@@ -38,6 +41,8 @@ private:
     SPISettings _normalSPISettings;
     SPISettings _configurationSPISettings;
 };
+
+}
 
 #endif
 
