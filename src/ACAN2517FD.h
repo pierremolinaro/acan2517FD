@@ -26,7 +26,7 @@ class ACAN2517FD {
 //······················································································································
 
 public:
-    ACAN2517FD(SPIHardwareInterface &inSPI);
+    ACAN2517FD(SPIHardwareInterface &inSPI, uint32_t (*inMillis) (void));
 
 //······················································································································
 //   begin method (returns 0 if no error)
@@ -164,6 +164,8 @@ public:
 //······················································································································
 private:
     SPIHardwareInterface &mSPI;
+private:
+    uint32_t (*millis)(void);
 private:
     bool isConfigurationMode;
 private:

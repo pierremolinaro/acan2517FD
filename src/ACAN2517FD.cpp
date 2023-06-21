@@ -130,9 +130,11 @@ static uint16_t u16FromBufferAtIndex(uint8_t ioBuffer[], const uint8_t inIndex) 
 //----------------------------------------------------------------------------------------------------------------------
 
 ACAN2517FD::ACAN2517FD(
-        SPIHardwareInterface &inSPI    // Hardware SPI object
+        SPIHardwareInterface &inSPI,    // Hardware SPI object
+        uint32_t (*inMillis) (void)
 ) :
         mSPI(inSPI),
+        millis(inMillis),
         isConfigurationMode(false),
         mUsesTXQ(false),
         mHardwareTxFIFOFull(false),
