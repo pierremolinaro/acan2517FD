@@ -18,13 +18,13 @@ namespace acan2517fd {
          *
          * @param configuration_mode If this is true, configure spi as configuration mode
          */
-        virtual void beginTransaction(bool configuration_mode = false);
+        virtual void beginTransaction(bool configuration_mode = false) = 0;
 
         /**
          * @brief Finish transaction
          *
          */
-        virtual void endTransaction();
+        virtual void endTransaction() = 0;
 
         /**
          * @brief Transfer data specified length
@@ -51,19 +51,19 @@ namespace acan2517fd {
          * @brief initialize CS pin
          *
          */
-        virtual void initCS();
+        virtual void initCS() = 0;
 
         /**
          * @brief assert cs
          *
          */
-        virtual void assertCS();
+        virtual void assertCS() = 0;
 
         /**
          * @brief assert cs
          *
          */
-        virtual void deassertCS();
+        virtual void deassertCS() = 0;
 
         /////////////////////////////////
         //  settings
