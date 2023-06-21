@@ -19,11 +19,11 @@ void MbedHardwareSPI::beginTransaction(bool configuration_mode)
     if(_configuration_mode != configuration_mode) {
         if(configuration_mode) {
             //  frequency
-            _dev.frequency(1000UL * 1000)
+            _dev.frequency(1000UL * 1000);
         }
         else {
             //  frequency
-            _dev.frequency(_spiClock)
+            _dev.frequency(_spiClock);
         }
 
         _configuration_mode = configuration_mode;
@@ -40,7 +40,7 @@ void MbedHardwareSPI::endTransaction()
 
 int MbedHardwareSPI::transfer(const uint8_t *buffer, int length)
 {
-    _dev.write(buffer, length, buffer, length);
+    _dev.write((char*) buffer, length, (char*) buffer, length);
 
     return 0;
 }
