@@ -2,7 +2,7 @@
 
 #include "MbedHardwareSPI.h"
 
-MbedHardwareSPI::MbedHardwareSPISPIClass & dev, const uint8_t cs)
+MbedHardwareSPI::MbedHardwareSPI(SPI & dev, const uint8_t cs)
   : _dev(dev), _cs(cs)
 {
     //  init spi settings
