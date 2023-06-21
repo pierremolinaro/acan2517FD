@@ -2,8 +2,8 @@
 
 #include "MbedHardwareSPI.h"
 
-MbedHardwareSPI::MbedHardwareSPI(SPI & dev, const uint8_t cs)
-  : _dev(dev), _cs(cs)
+MbedHardwareSPI::MbedHardwareSPI(SPI & dev, const PinName csPin)
+  : _dev(dev), _cs(csPin)
 {
     //  init spi settings
     //  configuration mode
