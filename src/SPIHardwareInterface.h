@@ -55,13 +55,13 @@ namespace acan2517fd {
          * @brief assert cs
          *
          */
-        virtual inline void assertCS();
+        virtual void assertCS();
 
         /**
          * @brief assert cs
          *
          */
-        virtual inline void deassertCS();
+        virtual void deassertCS();
 
         /////////////////////////////////
         //  settings

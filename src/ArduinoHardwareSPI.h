@@ -16,19 +16,19 @@ class ArduinoHardwareSPI : public SPIHardwareInterface
 public:
     ArduinoHardwareSPI(SPIClass & dev, const uint8_t cs);
 
-    void beginTransaction(bool configuration_mode = false) override;
+    virtual void beginTransaction(bool configuration_mode = false);
 
-    void endTransaction() override;
+    virtual void endTransaction();
 
-    int transfer(const uint8_t *buffer, int length) override;
+    virtual int transfer(const uint8_t *buffer, int length);
 
-    int transfer16(const uint16_t data) override;
+    virtual int transfer16(const uint16_t data);
 
-    void initCS() override;
+    virtual void initCS();
 
-    inline void assertCS() override;
+    virtual void assertCS();
 
-    inline void deassertCS() override;
+    virtual void deassertCS();
 
     void setSPIClock(const uint32_t spiClock) override;
 

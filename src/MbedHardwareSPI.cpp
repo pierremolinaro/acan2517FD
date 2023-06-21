@@ -58,12 +58,12 @@ void MbedHardwareSPI::initCS()
     //  nop
 }
 
-inline void MbedHardwareSPI::assertCS()
+void MbedHardwareSPI::assertCS()
 {
     _cs.write(0);
 }
 
-inline void MbedHardwareSPI::deassertCS()
+void MbedHardwareSPI::deassertCS()
 {
     _cs.write(1);
 }
