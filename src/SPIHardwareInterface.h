@@ -1,6 +1,8 @@
 #ifndef _SPI_HARDWARE_INTERFACE_H_
 #define _SPI_HARDWARE_INTERFACE_H_
 
+#include "stdint.h"
+
 namespace acan2517fd {
 
 
