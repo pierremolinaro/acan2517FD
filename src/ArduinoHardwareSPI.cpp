@@ -50,12 +50,12 @@ void ArduinoHardwareSPI::initCS()
     pinMode(_cs, OUTPUT);
 }
 
-void ArduinoHardwareSPI::assertCS()
+inline void ArduinoHardwareSPI::assertCS()
 {
     digitalWrite(_cs, LOW);
 }
 
-void ArduinoHardwareSPI::deassertCS()
+inline void ArduinoHardwareSPI::deassertCS()
 {
     digitalWrite(_cs, HIGH);
 }

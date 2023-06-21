@@ -25,9 +25,9 @@ public:
 
     virtual void initCS() override;
 
-    virtual void assertCS() override;
+    virtual inline void assertCS() override;
 
-    virtual void deassertCS() override;
+    virtual inline void deassertCS() override;
 
     void setSPIClock(const uint32_t spiClock) override;
 
