@@ -2,7 +2,7 @@
 
 #include "MbedHardwareSPI.h"
 
-MbedHardwareSPI:MbedHardwareSPISPIClass & dev, const uint8_t cs)
+MbedHardwareSPI::MbedHardwareSPISPIClass & dev, const uint8_t cs)
   : _dev(dev), _cs(cs)
 {
     //  init spi settings
@@ -14,7 +14,7 @@ MbedHardwareSPI:MbedHardwareSPISPIClass & dev, const uint8_t cs)
     _dev.format(8, 0);
 }
 
-void MbedHardwareSPI:beginTransaction(bool configuration_mode)
+void MbedHardwareSPI::beginTransaction(bool configuration_mode)
 {
     if(_configuration_mode != configuration_mode) {
         if(configuration_mode) {
@@ -32,41 +32,41 @@ void MbedHardwareSPI:beginTransaction(bool configuration_mode)
     //  TODO: lock?
 }
 
-void MbedHardwareSPI:endTransaction()
+void MbedHardwareSPI::endTransaction()
 {
     //  nope
     //  TODO: unlock?
 }
 
-int MbedHardwareSPI:transfer(const uint8_t *buffer, int length)
+int MbedHardwareSPI::transfer(const uint8_t *buffer, int length)
 {
     _dev.write(buffer, length, buffer, length);
 
     return 0;
 }
 
-int MbedHardwareSPI:transfer16(const uint16_t data)
+int MbedHardwareSPI::transfer16(const uint16_t data)
 {
     _dev.write(data);
     return 0;
 }
 
-void MbedHardwareSPI:initCS()
+void MbedHardwareSPI::initCS()
 {
     //  nop
 }
 
-inline void MbedHardwareSPI:assertCS()
+inline void MbedHardwareSPI::assertCS()
 {
     _cs.write(0);
 }
 
-inline void MbedHardwareSPI:deassertCS()
+inline void MbedHardwareSPI::deassertCS()
 {
     _cs.write(1);
 }
 
-void MbedHardwareSPI:setSPIClock(const uint32_t spiClock)
+void MbedHardwareSPI::setSPIClock(const uint32_t spiClock)
 {
     //  super
     SPIHardwareInterface::setSPIClock(spiClock);
