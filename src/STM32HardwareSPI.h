@@ -5,13 +5,14 @@
 
 #include "SPIHardwareInterface.h"
 #include "stdint.h"
+#include "main.h"
 
 namespace acan2517fd {
 
 class STM32HardwareSPI : public SPIHardwareInterface
 {
 public:
-    STM32HardwareSPI(SPI_HandleTypeDef & dev, GPIO_TypeDef & cs_port, uint16_t cs_pin);
+    STM32HardwareSPI(SPI_HandleTypeDef *dev, GPIO_TypeDef *cs_port, uint16_t cs_pin);
 
     virtual void beginTransaction(bool configuration_mode = false) override;
 
@@ -29,10 +30,10 @@ public:
 
 private:
     //  SPI
-    SPI_HandleTypeDef & _dev;
+    SPI_HandleTypeDef *_dev;
 
     //  GPIO Port
-    GPIO_TypeDef & _cs_port;
+    GPIO_TypeDef *_cs_port;
     uint16_t _cs_pin;
 };
 
