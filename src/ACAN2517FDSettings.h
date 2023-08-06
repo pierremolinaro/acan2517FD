@@ -41,11 +41,15 @@ class ACAN2517FDSettings {
   } CLKOpin ;
 
   public: typedef enum : uint8_t {
+    NormalFD = 0,
+    Sleep = 1,
     InternalLoopBack = 2,
-    ExternalLoopBack = 5,
     ListenOnly = 3,
-    NormalFD = 0
-  } RequestedMode ;
+    Configuration = 4,
+    ExternalLoopBack = 5,
+    Normal20B = 6,
+    RestrictedOperation = 7
+  } OperationMode ;
 
   public: typedef enum : uint8_t {Disabled, ThreeAttempts, UnlimitedNumber} RetransmissionAttempts ;
 
@@ -149,7 +153,7 @@ class ACAN2517FDSettings {
 //    Requested mode
 //······················································································································
 
-  public: RequestedMode mRequestedMode = NormalFD ;
+  public: OperationMode mRequestedMode = NormalFD ;
 
 //······················································································································
 //   TRANSMIT FIFO

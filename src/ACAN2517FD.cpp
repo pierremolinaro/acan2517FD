@@ -277,8 +277,8 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
       pinMode (mINT, INPUT_PULLUP) ;
     }
     initCS () ;
-  //----------------------------------- Set SPI clock to 1 MHz
-    mSPISettings = SPISettings (1000UL * 1000, MSBFIRST, SPI_MODE0) ;
+  //----------------------------------- Set SPI clock to 800 kHz
+    mSPISettings = SPISettings (800UL * 1000, MSBFIRST, SPI_MODE0) ;
   //----------------------------------- Request configuration mode
     bool wait = true ;
     const uint32_t startTime = millis () ;
@@ -291,10 +291,10 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
         wait = false ;
       }
     }
-  //----------------------------------- Reset MCP2517FD (always use a 1 MHz clock)
+  //----------------------------------- Reset MCP2517FD (always use a 800 kHz clock)
     reset2517FD () ;
   }
-//----------------------------------- Check SPI connection is on (with a 1 MHz clock)
+//----------------------------------- Check SPI connection is on (with a 800 kHz clock)
 // We write and the read back MCP2517FD RAM at address 0x400
   for (uint32_t i=1 ; (i != 0) && (errorCode == 0) ; i <<= 1) {
     const uint16_t RAM_WORD_ADDRESS = 0x400 ;
@@ -348,7 +348,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     }
   }
 //----------------------------------- Set full speed clock
-  mSPISettings = SPISettings (inSettings.sysClock () / 2, MSBFIRST, SPI_MODE0) ;
+  mSPISettings = SPISettings ((inSettings.sysClock () * 2) / 5, MSBFIRST, SPI_MODE0) ;
 //----------------------------------- Checking SPI connection is on (with a full speed clock)
 //    We write and read back 2517 RAM at address 0x400
   for (uint32_t i=1 ; (i != 0) && (errorCode == 0) ; i <<= 1) {
@@ -387,9 +387,11 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     writeRegister8 (CON_REGISTER, data8) ; // DS20005688B, page 24
   //----------------------------------- Configure DTC (DS20005688B, page 29)
     uint32_t data32 = 1UL << 25 ; // Enable Edge Filtering during Bus Integration state bit (added in 1.1.4)
-    data32 |= 1UL << 17 ; // Auto TDC
-    const uint32_t TCDO = uint32_t (inSettings.mTDCO) & 0x7F ;
-    data32 |= TCDO << 8 ;
+    if (inSettings.mTDCO != 0) {
+      data32 |= 1UL << 17 ; // Auto TDC
+      const uint32_t TCDO = uint32_t (inSettings.mTDCO) & 0x7F ;
+      data32 |= TCDO << 8 ;
+    }
     writeRegister32 (TDC_REGISTER, data32) ;
   //----------------------------------- Configure TXQ
     data8 = inSettings.mControllerTXQBufferRetransmissionAttempts ;
@@ -1195,19 +1197,19 @@ uint32_t ACAN2517FD::readRegister32 (const uint16_t inRegisterAddress) {
 //    Current MCP2517FD Operation Mode
 //······················································································································
 
-ACAN2517FD::OperationMode ACAN2517FD::currentOperationMode (void) {
+ACAN2517FDSettings::OperationMode ACAN2517FD::currentOperationMode (void) {
   const uint8_t mode = readRegister8 (CON_REGISTER + 2) >> 5 ;
-  return ACAN2517FD::OperationMode (mode) ;
+  return ACAN2517FDSettings::OperationMode (mode) ;
 }
 
 //······················································································································
 
 bool ACAN2517FD::recoverFromRestrictedOperationMode (void) {
    bool recoveryDone = false ;
-   if (currentOperationMode () == ACAN2517FD::RestrictedOperation) { // In Restricted Operation Mode
+   if (currentOperationMode () == ACAN2517FDSettings::RestrictedOperation) { // In Restricted Operation Mode
   //----------------------------------- Request mode (CON_REGISTER + 3)
   //  bits 7-4: Transmit Bandwith Sharing Bits ---> 0
-  //  bit 3: Abort All Pending Transmissions bit --> 0
+  //  bit 3: Abort All Pending Transmission bits --> 0
     writeRegister8 (CON_REGISTER + 3, mTXBWS_RequestedMode);
   //----------------------------------- Wait (10 ms max) until requested mode is reached
     bool wait = true ;
@@ -1224,10 +1226,20 @@ bool ACAN2517FD::recoverFromRestrictedOperationMode (void) {
   return recoveryDone ;
 }
 
+//······················································································································
+//    Set MCP2517FD Operation Mode
+//······················································································································
+
+void ACAN2517FD::setOperationMode (const ACAN2517FDSettings::OperationMode inOperationMode) {
+//  bits 7-4: Transmit Bandwith Sharing Bits ---> 0
+//  bit 3: Abort All Pending Transmission bits --> 0
+  writeRegister8 (CON_REGISTER + 3, uint8_t (inOperationMode));
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 void ACAN2517FD::reset2517FD (void) {
-  mSPI.beginTransaction (mSPISettings) ; // Check RESET is performed with 1 MHz clock
+  mSPI.beginTransaction (mSPISettings) ; // Check RESET is performed with 800 kHz clock
     #ifdef ARDUINO_ARCH_ESP32
       taskDISABLE_INTERRUPTS () ;
     #else
@@ -1254,6 +1266,57 @@ uint32_t ACAN2517FD::errorCounters (void) {
 
 uint32_t ACAN2517FD::diagInfos (const int inIndex) { // thanks to Flole998 and turmary
   return readRegister32 (inIndex ? BDIAG1_REGISTER: BDIAG0_REGISTER) ;
+}
+
+//······················································································································
+//    GPIO
+//----------------------------------------------------------------------------------------------------------------------
+
+void ACAN2517FD::gpioSetMode (const uint8_t inPin, const uint8_t inMode) {
+  if (inPin <= 1) {
+    uint8_t value = readRegister8 (IOCON_REGISTER + 3) ;
+    if (inMode == INPUT) {
+      value |=   (1 << inPin) ;
+      if (inPin == 0) {
+        value &= 3 ; // Clear XSBTYEN
+      }
+    }else if (inMode == OUTPUT) {
+      value &= ~ (1 << inPin) ;
+      if (inPin == 0) {
+        value &= 3 ; // Clear XSBTYEN
+      }
+    }
+    writeRegister8 (IOCON_REGISTER + 3, value) ;
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void ACAN2517FD::gpioWrite (const uint8_t inPin, const uint8_t inLevel) {
+  if (inPin <= 1) {
+    uint8_t value = readRegister8 (IOCON_REGISTER + 2) ;
+    if (inLevel == 0) { // LOW
+      value &= ~ (1 << inPin) ;
+    }else{
+      value |=   (1 << inPin) ;
+    }
+    writeRegister8 (IOCON_REGISTER + 2, value) ;
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+bool ACAN2517FD::gpioRead (const uint8_t inPin) {
+  const uint8_t value = readRegister8 (IOCON_REGISTER + 1) ;
+  return (value >> inPin) & 1 ;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void ACAN2517FD::configureGPIO0AsXSTBY (void) {
+  uint8_t value = readRegister8 (IOCON_REGISTER + 3) ;
+  value |= (1 << 6) ; // Enable XSBTYEN
+  writeRegister8 (IOCON_REGISTER + 3, value) ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

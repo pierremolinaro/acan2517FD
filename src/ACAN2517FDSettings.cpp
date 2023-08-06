@@ -149,8 +149,12 @@ mDataBitRateFactor (inDataBitRateFactor) {
       dataPS1 = MAX_DATA_PHASE_SEGMENT_1 ;
     }
   //---
-    const int TDCO = bestBRP * dataPS1 ; // According to DS20005678D, §3.4.8 Page 20
-    mTDCO = (TDCO > 63) ? 63 : (int8_t) TDCO ;
+    if ((mDesiredArbitrationBitRate * uint32_t (inDataBitRateFactor)) <= (1000UL * 1000)) {
+      mTDCO = 0 ;
+    }else{
+      const int TDCO = bestBRP * dataPS1 ; // According to DS20005678D, §3.4.8 Page 20
+      mTDCO = (TDCO > 63) ? 63 : (int8_t) TDCO ;
+    }
     mDataPhaseSegment1 = (uint8_t) dataPS1 ;
     mDataPhaseSegment2 = (uint8_t) dataPS2 ;
     mDataSJW = mDataPhaseSegment2 ;

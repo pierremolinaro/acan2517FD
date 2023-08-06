@@ -44,6 +44,7 @@ void setup () {
     delay (50) ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
   }
+  delay (3000) ;
 //--- Define alternate pins for SPI1 (see https://www.pjrc.com/teensy/td_libs_SPI.html)
   Serial.print ("Using pin #") ;
   Serial.print (MCP2517_SDI) ;
@@ -65,9 +66,8 @@ void setup () {
 //--- Configure ACAN2517FD
   Serial.println ("Configure ACAN2517FD") ;
 //--- For version >= 2.1.0
-  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000, DataBitRateFactor::x1) ;
-//--- For version < 2.1.0
-//  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000, ACAN2517FDSettings::DATA_BITRATE_x4) ;
+//  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_4MHz10xPLL, 125 * 1000, DataBitRateFactor::x1) ;
+  ACAN2517FDSettings settings (ACAN2517FDSettings::OSC_40MHz, 1000 * 1000, DataBitRateFactor::x8) ;
   settings.mRequestedMode = ACAN2517FDSettings::InternalLoopBack ; // Select loopback mode
 //--- RAM Usage
   Serial.print ("MCP2517FD RAM Usage: ") ;
@@ -75,29 +75,30 @@ void setup () {
   Serial.println (" bytes") ;
 //--- Begin
   const uint32_t errorCode = can.begin (settings, [] { can.isr () ; }) ;
+  Serial.print ("Bit Rate prescaler: ") ;
+  Serial.println (settings.mBitRatePrescaler) ;
+  Serial.print ("Arbitration Phase segment 1: ") ;
+  Serial.println (settings.mArbitrationPhaseSegment1) ;
+  Serial.print ("Arbitration Phase segment 2: ") ;
+  Serial.println (settings.mArbitrationPhaseSegment2) ;
+  Serial.print ("Arbitration SJW:") ;
+  Serial.println (settings.mArbitrationSJW) ;
+  Serial.print ("Actual Arbitration Bit Rate: ") ;
+  Serial.print (settings.actualArbitrationBitRate ()) ;
+  Serial.println (" bit/s") ;
+  Serial.print ("Exact Arbitration Bit Rate ? ") ;
+  Serial.println (settings.exactArbitrationBitRate () ? "yes" : "no") ;
+  Serial.print ("Arbitration Sample point: ") ;
+  Serial.print (settings.arbitrationSamplePointFromBitStart ()) ;
+  Serial.println ("%") ;
+  Serial.print ("Data Phase segment 1: ") ;
+  Serial.println (settings.mDataPhaseSegment1) ;
+  Serial.print ("Data Phase segment 2: ") ;
+  Serial.println (settings.mDataPhaseSegment2) ;
+  Serial.print ("Data SJW:") ;
+  Serial.println (settings.mDataSJW) ;
   if (errorCode == 0) {
-    Serial.print ("Bit Rate prescaler: ") ;
-    Serial.println (settings.mBitRatePrescaler) ;
-    Serial.print ("Arbitration Phase segment 1: ") ;
-    Serial.println (settings.mArbitrationPhaseSegment1) ;
-    Serial.print ("Arbitration Phase segment 2: ") ;
-    Serial.println (settings.mArbitrationPhaseSegment2) ;
-    Serial.print ("Arbitration SJW:") ;
-    Serial.println (settings.mArbitrationSJW) ;
-    Serial.print ("Actual Arbitration Bit Rate: ") ;
-    Serial.print (settings.actualArbitrationBitRate ()) ;
-    Serial.println (" bit/s") ;
-    Serial.print ("Exact Arbitration Bit Rate ? ") ;
-    Serial.println (settings.exactArbitrationBitRate () ? "yes" : "no") ;
-    Serial.print ("Arbitration Sample point: ") ;
-    Serial.print (settings.arbitrationSamplePointFromBitStart ()) ;
-    Serial.println ("%") ;
-    Serial.print ("Data Phase segment 1: ") ;
-    Serial.println (settings.mDataPhaseSegment1) ;
-    Serial.print ("Data Phase segment 2: ") ;
-    Serial.println (settings.mDataPhaseSegment2) ;
-    Serial.print ("Data SJW:") ;
-    Serial.println (settings.mDataSJW) ;
+    Serial.println ("Configuration ok") ;
   }else{
     Serial.print ("Configuration error 0x") ;
     Serial.println (errorCode, HEX) ;
@@ -118,6 +119,7 @@ void loop() {
     gBlinkLedDate += 500 ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
     frame.len = 64 ;
+   // frame.type = CANFDMessage::CANFD_NO_BIT_RATE_SWITCH ;
     for (uint8_t i=0 ; i<frame.len ; i++) {
       frame.data [i] = i ;
     }
