@@ -131,13 +131,16 @@ static const uint16_t OSC_REGISTER = 0xE00 ;
 //   INPUT / OUPUT CONTROL REGISTER
 //······················································································································
 
-static const uint16_t IOCON_REGISTER = 0xE04 ;
+static const uint16_t IOCON_REGISTER_00_07 = 0xE04 ;
+static const uint16_t IOCON_REGISTER_08_15 = 0xE05 ;
+static const uint16_t IOCON_REGISTER_16_23 = 0xE06 ;
+static const uint16_t IOCON_REGISTER_24_31 = 0xE07 ;
 
 //----------------------------------------------------------------------------------------------------------------------
 //    RECEIVE FIFO INDEX
 //----------------------------------------------------------------------------------------------------------------------
 
-static const uint8_t RECEIVE_FIFO_INDEX = 1 ;
+static const uint8_t RECEIVE_FIFO_INDEX  = 1 ;
 static const uint8_t TRANSMIT_FIFO_INDEX = 2 ;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -378,7 +381,7 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
     if (inSettings.mINTIsOpenDrain) {
       data8 |= 1 << 6 ; // INTOD
     }
-    writeRegister8 (IOCON_REGISTER + 3, data8) ; // DS20005688B, page 24
+    writeRegister8 (IOCON_REGISTER_24_31, data8) ; // DS20005688B, page 24
   //----------------------------------- Configure ISO CRC Enable bit
     data8 = 1 << 6 ; // PXEDIS <-- 1
     if (inSettings.mISOCRCEnabled) {
@@ -1256,6 +1259,28 @@ void ACAN2517FD::reset2517FD (void) {
   mSPI.endTransaction () ;
 }
 
+//······················································································································
+//    Sleep Mode to Configuration Mode
+// (returns true if MCP2517FD was in sleep mode)
+//······················································································································
+// The device exits Sleep mode due to a dominant edge on RXCAN or by enabling the oscillator (clearing OSC.OSCDIS).
+// The module will transition automatically to Configuration mode.
+
+bool ACAN2517FD::performSleepModeToConfigurationMode (void) {
+  uint8_t value = readRegister8 (OSC_REGISTER) ;
+  const bool inSleepMode = (value & (1 << 2)) != 0 ;
+  if (inSleepMode) {
+    value &= ~ (1 << 2) ; // Reset OSCDIS bit
+    writeRegister8 (OSC_REGISTER, value) ;
+  //--- Wait Clock is ready, ie OSC.OSCRDY is 1
+    bool wait = true ;
+    while (wait) {
+      wait = (readRegister8 (OSC_REGISTER + 1) & (1 << 2)) == 0 ;
+    }
+  }
+  return inSleepMode ;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 uint32_t ACAN2517FD::errorCounters (void) {
@@ -1274,9 +1299,9 @@ uint32_t ACAN2517FD::diagInfos (const int inIndex) { // thanks to Flole998 and t
 
 void ACAN2517FD::gpioSetMode (const uint8_t inPin, const uint8_t inMode) {
   if (inPin <= 1) {
-    uint8_t value = readRegister8 (IOCON_REGISTER + 3) ;
+    uint8_t value = readRegister8 (IOCON_REGISTER_00_07) ;
     if (inMode == INPUT) {
-      value |=   (1 << inPin) ;
+      value |=  (1 << inPin) ;
       if (inPin == 0) {
         value &= 3 ; // Clear XSBTYEN
       }
@@ -1286,7 +1311,7 @@ void ACAN2517FD::gpioSetMode (const uint8_t inPin, const uint8_t inMode) {
         value &= 3 ; // Clear XSBTYEN
       }
     }
-    writeRegister8 (IOCON_REGISTER + 3, value) ;
+    writeRegister8 (IOCON_REGISTER_00_07, value) ;
   }
 }
 
@@ -1294,29 +1319,29 @@ void ACAN2517FD::gpioSetMode (const uint8_t inPin, const uint8_t inMode) {
 
 void ACAN2517FD::gpioWrite (const uint8_t inPin, const uint8_t inLevel) {
   if (inPin <= 1) {
-    uint8_t value = readRegister8 (IOCON_REGISTER + 2) ;
+    uint8_t value = readRegister8 (IOCON_REGISTER_08_15) ;
     if (inLevel == 0) { // LOW
       value &= ~ (1 << inPin) ;
     }else{
       value |=   (1 << inPin) ;
     }
-    writeRegister8 (IOCON_REGISTER + 2, value) ;
+    writeRegister8 (IOCON_REGISTER_08_15, value) ;
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 bool ACAN2517FD::gpioRead (const uint8_t inPin) {
-  const uint8_t value = readRegister8 (IOCON_REGISTER + 1) ;
+  const uint8_t value = readRegister8 (IOCON_REGISTER_16_23) ;
   return (value >> inPin) & 1 ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 void ACAN2517FD::configureGPIO0AsXSTBY (void) {
-  uint8_t value = readRegister8 (IOCON_REGISTER + 3) ;
+  uint8_t value = readRegister8 (IOCON_REGISTER_00_07) ;
   value |= (1 << 6) ; // Enable XSBTYEN
-  writeRegister8 (IOCON_REGISTER + 3, value) ;
+  writeRegister8 (IOCON_REGISTER_00_07, value) ;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
