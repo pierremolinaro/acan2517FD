@@ -797,29 +797,33 @@ bool ACAN2517FD::available (void) {
 //------------------------------------------------------------------------------
 
 bool ACAN2517FD::receive (CANFDMessage & outMessage) {
-  mSPI.beginTransaction (mSPISettings) ;
-    #ifdef ARDUINO_ARCH_ESP32
-      taskDISABLE_INTERRUPTS () ;
-    #else
-      noInterrupts () ;
-    #endif
-      const bool hasReceivedMessage = mDriverReceiveBuffer.remove (outMessage) ;
+    const bool hasReceivedMessage = mDriverReceiveBuffer.remove (outMessage) ;
+  
     //--- If receive interrupt is disabled, enable it (added in release 2.17)
       if (mINT == 255) { // No interrupt pin
         mRxInterruptEnabled = true ;
         isr_poll_core () ; // Perform polling
       }else if (!mRxInterruptEnabled) {
+        mSPI.beginTransaction (mSPISettings) ;
+          #ifdef ARDUINO_ARCH_ESP32
+            taskDISABLE_INTERRUPTS () ;
+          #else
+            noInterrupts () ;
+          #endif
+
         mRxInterruptEnabled = true ;
         uint8_t data8 = readRegister8Assume_SPI_transaction (INT_REGISTER + 2) ;
         data8 |= (1 << 1) ; // Receive FIFO Interrupt Enable
         writeRegister8Assume_SPI_transaction (INT_REGISTER + 2, data8) ;
+
+        #ifdef ARDUINO_ARCH_ESP32
+          taskENABLE_INTERRUPTS () ;
+        #else
+          interrupts () ;
+        #endif
+
+        mSPI.endTransaction () ;
       }
-    #ifdef ARDUINO_ARCH_ESP32
-      taskENABLE_INTERRUPTS () ;
-    #else
-      interrupts () ;
-    #endif
-  mSPI.endTransaction () ;
   return hasReceivedMessage ;
 }
 
