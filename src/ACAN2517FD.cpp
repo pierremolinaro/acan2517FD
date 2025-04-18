@@ -963,6 +963,7 @@ void ACAN2517FD::transmitInterrupt (void) { // Generated if hardware transmit FI
 void ACAN2517FD::receiveInterrupt (void) {
   const uint16_t ramAddress = uint16_t (0x400 + readRegister32Assume_SPI_transaction (FIFOUA_REGISTER (RECEIVE_FIFO_INDEX))) ;
   CANFDMessage message ;
+  message.Time = micros();
 //--- Read word register via 6-byte buffer (speed enhancement, thanks to thomasfla)
   uint8_t buffer [74] = {0} ;
 //--- Enter command

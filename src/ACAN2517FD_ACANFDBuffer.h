@@ -54,7 +54,7 @@ class ACANFDBuffer {
   public: inline uint32_t count (void) const { return mCount ; }
   public: inline bool isFull (void) const { return mCount == mSize ; } // Added in release 2.17 (thanks to Flole998)
   public: inline uint32_t peakCount (void) const { return mPeakCount ; }
-  public: inline void resetpeakCount (void) const { mPeakCount = 0; }
+  public: inline void resetpeakCount (void) { mPeakCount = 0; }
 //······················································································································
 // initWithSize
 //······················································································································
