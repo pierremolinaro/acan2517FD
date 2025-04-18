@@ -152,6 +152,9 @@ class ACAN2517FD {
 
   public: uint32_t driverReceiveBufferPeakCount (void) const { return mDriverReceiveBuffer.peakCount () ; }
 
+  public: void resetdriverReceiveBufferPeakCount (void) { mDriverReceiveBuffer.resetpeakCount () ; }
+  public: uint32_t driverReceiveBufferSize (void) const { return mDriverReceiveBuffer.size () ; }
+  public: uint32_t driverReceiveBufferCount (void) const { return mDriverReceiveBuffer.count () ; }
   public: uint8_t hardwareReceiveBufferOverflowCount (void) const { return mHardwareReceiveBufferOverflowCount ; }
 
   public: void resetHardwareReceiveBufferOverflowCount (void) { mHardwareReceiveBufferOverflowCount = 0 ; }

@@ -25,6 +25,7 @@ class CANMessage {
   public : bool rtr = false ; // false -> data frame, true -> remote frame
   public : uint8_t idx = 0 ;  // This field is used by the driver
   public : uint8_t len = 0 ;  // Length of data (0 ... 8)
+  public : unsigned long Time ;  // microsec
   public : union {
     uint64_t data64        ; // Caution: subject to endianness
     int64_t  data_s64      ; // Caution: subject to endianness

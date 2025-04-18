@@ -44,6 +44,7 @@ class CANFDMessage {
   type (inMessage.rtr ? CAN_REMOTE : CAN_DATA),
   idx (inMessage.idx),  // This field is used by the driver
   len (inMessage.len), // Length of data (0 ... 64)
+  Time (inMessage.Time), // Length of data (0 ... 64)
   data () {
     data64 [0] = inMessage.data64 ;
   }
@@ -68,6 +69,7 @@ class CANFDMessage {
   public : Type type ;
   public : uint8_t idx ;  // This field is used by the driver
   public : uint8_t len ;  // Length of data (0 ... 64)
+  public : unsigned long Time ;  // microsec
   public : union {
     uint64_t data64    [ 8] ; // Caution: subject to endianness
     int64_t  data_s64  [ 8] ; // Caution: subject to endianness
