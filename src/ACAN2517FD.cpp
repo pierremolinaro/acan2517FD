@@ -184,7 +184,6 @@ mINT (inINT),
 mUsesTXQ (false),
 mHardwareTxFIFOFull (false),
 mRxInterruptEnabled (true),
-mHasDataBitRate (false),
 mTransmitFIFOPayload (0),
 mTXQBufferPayload (0),
 mReceiveFIFOPayload (0),
@@ -478,17 +477,14 @@ uint32_t ACAN2517FD::begin (const ACAN2517FDSettings & inSettings,
   //  bits 11-8: TSEG2 - 1
   //  bits 7-4: unused
   //  bits 3-0: SJW - 1
-    mHasDataBitRate = inSettings.mDataBitRateFactor != ::DataBitRateFactor::x1 ;
-    if (mHasDataBitRate) {
-      data = inSettings.mBitRatePrescaler - 1 ;
-      data <<= 8 ;
-      data |= inSettings.mDataPhaseSegment1 - 1 ;
-      data <<= 8 ;
-      data |= inSettings.mDataPhaseSegment2 - 1 ;
-      data <<= 8 ;
-      data |= inSettings.mDataSJW - 1 ;
-      writeRegister32 (DBTCFG_REGISTER, data) ;
-    }
+    data = inSettings.mBitRatePrescaler - 1 ;
+    data <<= 8 ;
+    data |= inSettings.mDataPhaseSegment1 - 1 ;
+    data <<= 8 ;
+    data |= inSettings.mDataPhaseSegment2 - 1 ;
+    data <<= 8 ;
+    data |= inSettings.mDataSJW - 1 ;
+    writeRegister32 (DBTCFG_REGISTER, data) ;
   //----------------------------------- Request mode (CON_REGISTER + 3, DS20005688B, page 24)
   //  bits 7-4: Transmit Bandwith Sharing Bits ---> 0
   //  bit 3: Abort All Pending Transmissions bit --> 0
@@ -677,9 +673,7 @@ void ACAN2517FD::appendInControllerTxFIFO (const CANFDMessage & inMessage) {
     break ;
   case CANFDMessage::CANFD_WITH_BIT_RATE_SWITCH :
     flags |= 1 << 7 ; // Set FDF bit
-    if (mHasDataBitRate) {
-      flags |= 1 << 6 ; // Set BRS bit
-    }
+    flags |= 1 << 6 ; // Set BRS bit
     break ;
   }
 //--- Word count
@@ -742,9 +736,7 @@ bool ACAN2517FD::sendViaTXQ (const CANFDMessage & inMessage) {
         break ;
       case CANFDMessage::CANFD_WITH_BIT_RATE_SWITCH :
         flags |= 1 << 7 ; // Set FDF bit
-        if (mHasDataBitRate) {
-          flags |= 1 << 6 ; // Set BRS bit
-        }
+        flags |= 1 << 6 ; // Set BRS bit
         break ;
       }
     //--- Word count
